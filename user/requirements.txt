@@ -1,0 +1,5 @@
+autogen_agentchat==0.7.2
+autogen_core==0.7.2
+autogen_ext==0.7.2
+httpx==0.28.1
+pydantic==2.11.7
