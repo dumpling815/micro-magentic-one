@@ -1,8 +1,6 @@
 from fastapi import FastAPI, Body, HTTPException
-from pydantic import BaseModel, Field
-from typing import Any, Literal
 import time, os
-from RequestSchema import InvokeBody, InvokeResult
+from RequestSchema import InvokeBody, InvokeResult, Msg
 
 app = FastAPI(title="Magentic-One Coder Agent")
 
@@ -21,17 +19,17 @@ REQUEST_TIMEOUT  = float(os.getenv("REQUEST_TIMEOUT", "30"))
 
 # --- Lazy Singleton ---
 _client = None
-_agent = None
-def get_agent() -> MagenticOneCoderAgent:
-    global _client, _agent
-    if _agent is None:
+_coder = None
+def get_coder() -> MagenticOneCoderAgent:
+    global _client, _coder
+    if _coder is None:
         if _client is None:
             if MODEL_PROVIDER == "ollama":
                 _client = OllamaChatCompletionClient(model=OLLAMA_MODEL, host=OLLAMA_HOST, timeout=REQUEST_TIMEOUT)
             else:
                 raise RuntimeError(f"Unsupported model provider: {MODEL_PROVIDER}")
-        _agent = MagenticOneCoderAgent(name="coder", model_client=_client)
-    return _agent
+        _coder = MagenticOneCoderAgent(name="coder", model_client=_client) # Description과 System message는 해당 클래스에 구현되어 있음.
+    return _coder
 
 # --- Endpoints ---
 @app.get("/health")
@@ -47,7 +45,7 @@ def health():
 @app.get("/ready")
 def ready():
     try:
-        _ = get_agent()
+        _ = get_coder()
         return {"ready": True}
     except Exception as e:
         raise HTTPException(503, f"not ready: {str(e)}")
@@ -61,20 +59,20 @@ async def invoke(body: InvokeBody = Body(...)):
             raise HTTPException(status_code=400, detail=f"Unsupported message type: {m.type}")
         py_msgs.append(TextMessage(content=m.content, source=m.source))
     
-    agent = get_agent()
+    coder = get_coder()
 
     try:
-        response = await agent.on_messages(py_msgs, CancellationToken())
+        response = await coder.on_messages(py_msgs, CancellationToken())
         chat_msg = getattr(response, "chat_message", None)
-        content = getattr(chat_msg, "content", "") if chat_msg else str(response)
-        return {
-            "status": "ok",
-            "message": {"type": "TextMessage", "source": "coder", "content": content},
-            "elapsed": {"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
-        }
+        content = getattr(chat_msg, "content", "") if chat_msg else str(response) 
+        return InvokeResult(
+            status="ok", 
+            message=Msg(type="TextMessage", source="coder", content=content), 
+            elapsed={"Code Generation latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+        )
     except Exception as e:
-        return {
-            "status": "fail",
-            "message": None,
-            "elapsed": {"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
-        }
+        return InvokeResult(
+            status="fail", 
+            message=Msg(type="TextMessage", source="coder", content=content), 
+            elapsed={"Code Generation latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+        )

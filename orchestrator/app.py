@@ -158,7 +158,7 @@ def ready():
 class OrchestrateInput(BaseModel):
     input: InvokeBody
 
-@app.post("/orchestrate", response_model=FinalResult)
+@app.post("/invoke", response_model=FinalResult)
 async def orchestrate(body: OrchestrateInput = Body(...)):
     """
     Magentic-One Orchestrator    """
