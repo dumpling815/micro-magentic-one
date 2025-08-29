@@ -20,6 +20,7 @@ WORKDIR = os.getenv("WORKDIR", "/workspace")
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
 ALLOW_CMDS = os.getenv("ALLOW_CMDS") # e.g. python, pip, ls, cat, cd
 DENY_CMDS = os.getenv("DENY_CMDS") # e.g. rm, sudo
+CLEANUP_TEMP_FILES = os.getenv("CLEANUP_TEMP_FILES", "false").lower() == "true"
 
 ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://orchestrator:8000")
 
@@ -33,8 +34,7 @@ def get_executor() -> LocalCommandLineCodeExecutor:
         _executor = LocalCommandLineCodeExecutor(
             timeout = REQUEST_TIMEOUT,
             work_dir=WORKDIR,
-            allow_cmds=[cmd.strip() for cmd in ALLOW_CMDS.split(",")] if ALLOW_CMDS else None,
-            deny_cmds=[cmd.strip() for cmd in DENY_CMDS.split(",")] if DENY_CMDS else None,
+            cleanup_temp_files=CLEANUP_TEMP_FILES, # Set to False for debugging purposes
         )
     return _executor
 
@@ -42,7 +42,7 @@ def get_executor() -> LocalCommandLineCodeExecutor:
 # --- Endpoints ---
 @app.get("/health")
 def health():
-    return {"status":"ok","workdir":WORKDIR,"allow":ALLOW_CMDS,"deny":DENY_CMDS}
+    return {"status":"ok","workdir":WORKDIR,"cleanup_temp_files":CLEANUP_TEMP_FILES,"timeout":REQUEST_TIMEOUT}
 
 @app.get("/ready")
 def ready():
@@ -72,6 +72,7 @@ async def invoke(body: InvokeBody = Body(...)):
     
     try:
         code_result = await executor.execute_code_blocks(code_blocks=code_blocks, cancellation_token=CancellationToken())
+        # code_result는 CodeResult 클래스 : {exit_code: int, output: str} 형태.
         return InvokeResult(
             status="ok", 
             message=Msg(type="TextMessage", source="computerterminal", content=code_result), 
