@@ -2,13 +2,16 @@ from autogen_ext.agents.magentic_one import MagenticOneCoderAgent
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
-from autogen_core.code_executor import CodeBlock, CODE_BLOCK_PATTERN
+from autogen_core.code_executor import CodeBlock
 from autogen_core.code_executor._func_with_reqs import to_code
 from autogen_ext.code_executors.local import LocalCommandLineCodeExecutor
 from asyncio import run
 from RequestSchema import Msg, InvokeBody, InvokeResult
 from fastapi import HTTPException
 import re # for finding code block
+
+
+CODE_BLOCK_PATTERN = r"```[ \t]*(\w+)?[ \t]*\r?\n(.*?)\r?\n[ \t]*```"
 
 def code_block_parser(msg: TextMessage) -> CodeBlock:
     # This function gets the code block from the response message and return the pure python code.
