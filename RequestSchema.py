@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any, Literal
+from autogen_core.code_executor import CodeResult
+from autogen_agentchat.base import Response, TaskResult
 
 class Msg(BaseModel):
     type: Literal["TextMessage"] = "TextMessage" # e.g. text, code, file, image, etc. 하지만 현재는 "TextMessage"만 사용 (간편화)
@@ -14,5 +16,5 @@ class InvokeBody(BaseModel):
 
 class InvokeResult(BaseModel):
     status: Literal["ok","fail"]
-    message: Msg | None = None
+    response: Response | TaskResult | None = None
     elapsed: dict

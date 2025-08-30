@@ -9,6 +9,7 @@ from autogen_ext.agents.magentic_one import MagenticOneCoderAgent
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
 from autogen_agentchat.messages import TextMessage
+from autogen_agentchat.base import Response
 
 # --- Env ---
 MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "ollama")  # e.g. openai, ollama
@@ -55,24 +56,25 @@ async def invoke(body: InvokeBody = Body(...)):
     start_time_perf = time.perf_counter()
     py_msgs =[]
     for m in body.messages:
-        if m.type != "TextMessage":
+        if m.type != "TextMessage": # 이후에 ChatMessage로 변경하여 더 다양한 메시지 타입 지원.
             raise HTTPException(status_code=400, detail=f"Unsupported message type: {m.type}")
         py_msgs.append(TextMessage(content=m.content, source=m.source))
     
     coder = get_coder()
 
     try:
-        response = await coder.on_messages(py_msgs, CancellationToken())
-        chat_msg = getattr(response, "chat_message", None)
-        content = getattr(chat_msg, "content", "") if chat_msg else str(response) 
+        response: Response = await coder.on_messages(py_msgs, CancellationToken())
+        if not isinstance(response, Response):
+            raise ValueError("Coder agent did not return a valid Response object.")
+        
         return InvokeResult(
             status="ok", 
-            message=Msg(type="TextMessage", source="coder", content=content), 
-            elapsed={"Code Generation latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+            response=response, 
+            elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
     except Exception as e:
         return InvokeResult(
             status="fail", 
-            message=Msg(type="TextMessage", source="coder", content=content), 
-            elapsed={"Code Generation latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+            response=response, 
+            elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )

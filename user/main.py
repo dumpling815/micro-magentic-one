@@ -1,8 +1,9 @@
 import os, time, httpx
 from RequestSchema import InvokeBody, InvokeResult, Msg
+from autogen_agentchat.base import TaskResult
 
 REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "120"))
-PORT = os.getenv("PORT", "8000")
+ENTRYPOINT_URL = os.getenv("ENTRYPOINT", "http://localhost:8000/start")
 RETRIES = int(os.getenv("RETRIES", "1"))             # 실패 시 추가 재시도 횟수
 
 def agent_health_check():
@@ -40,7 +41,8 @@ def main():
     
     # Start the main loop if all agents are ready
     with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
-        time_per_request_ms = []
+        e2e_time_per_request_ms = []
+        orchestrate_time_per_request_ms = []
         while True:
             try:
                 user_input = input("Your request: ")
@@ -50,22 +52,29 @@ def main():
                     # 필요시 Docker Container에게 /kill url로 요청
                     break
                 elif user_input == "":
-                    continue
+                    print("Task cannot be empty. Please enter a valid request.")
+                    break
 
                 start_time_perf = time.perf_counter()
                 user_msg = Msg(type="TextMessage", source="user", content=user_input)
-                final_response = client.post(f"http://localhost:{PORT}/start", json=user_msg.model_dump())
-                if final_response.status_code in [200, 201, 204, 206]:
-                    result = InvokeResult(**final_response.json())
-                    time_per_request_ms.append(int((time.perf_counter() - start_time_perf)*1000))
-                    print("####################################")
-                    print(f"Status:{result.status}\nSteps:{result.steps}\nTotal Latency(ms):{result.total_latency_ms}\n")
-                    print("####################################")
-                    print(f"Content: {result.message.content}")
-                    print("####################################")
-                else:
-                    time_per_request_ms.append(int((time.perf_counter() - start_time_perf)*1000))
-                    print(f"Error: {final_response.text}")
+                body = InvokeBody(messages=[user_msg])
+
+                final_response: InvokeResult = client.post(ENTRYPOINT_URL, json=body.model_dump()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
+                result = InvokeResult(**final_response) # 응답 형태는 Json, 역직렬화.
+                task_result: TaskResult = result.response if isinstance(result.response, TaskResult) else None 
+
+                # Latency Measurement
+                end_time_perf = time.perf_counter()
+                e2e_time_per_request_ms.append(int((end_time_perf - start_time_perf)*1000))
+                orchestrate_time_per_request_ms.append(result.elapsed.get("orchestration_latency_ms", 0))
+
+
+                # Display Result of the Entire System
+                print("####################################")
+                print(f"Final Message from Micro Magentic-One System:\n->  {task_result.messages[-1].content if task_result and task_result.messages else 'No message returned'}")
+                print("####################################")
+                print(f"E2E Latency(ms): {e2e_time_per_request_ms[-1]}\nOrchestration Latency(ms): {orchestrate_time_per_request_ms[-1]}")
+                print("####################################")
             except httpx.RequestError as e:
                 print(f"Request failed: {e}")
             except (KeyboardInterrupt, EOFError):

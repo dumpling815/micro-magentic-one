@@ -1,16 +1,14 @@
 from fastapi import FastAPI, Body, HTTPException
-from pydantic import BaseModel, Field
-from typing import Any, Literal, Optional
-import time, os, httpx, asyncio
-from RequestSchema import Msg, InvokeBody
+from typing import Sequence
+import time, os, httpx
+from RequestSchema import Msg, InvokeBody, InvokeResult
 
 # --- AutoGen imports ---
-from autogen_agentchat.messages import TextMessage, ChatMessage
+from autogen_agentchat.messages import TextMessage, ChatMessage # ChatMessage는 TextMessage를 포함하는 Uninon. (다양한 메시지 타입 지원을 위해)
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
-try:
-    from autogen_agentchat.teams._group_chat.magentic_one._magentic_one_orchestrator import MagenticOneOrchestrator
-except Exception:
-    from autogen_agentchat.teams.magentic_one import MagenticOneOrchestrator # 리팩토링 되었을 경우
+from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.teams import MagenticOneGroupChat 
+from autogen_agentchat.base import Response, TaskResult
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 
 
@@ -21,7 +19,7 @@ app = FastAPI(title="Magentic-One Orchestrator")
 URL_FILESURFER       = os.getenv("URL_FILESURFER", "http://filesurfer:8000")
 URL_WEBSURFER        = os.getenv("URL_WEBSURFER", "http://websurfer:8000")
 URL_CODER            = os.getenv("URL_CODER", "http://coder:8000")
-URL_COMPUTERTERMINAL             = os.getenv("URL_User", "http://computerterminal:8000")
+URL_COMPUTERTERMINAL             = os.getenv("URL_COMPUTERTERMINAL", "http://computerterminal:8000")
 
 MODEL_PROVIDER       = os.getenv("MODEL_PROVIDER", "ollama")  # e.g. ollama, openai, etc.
 OLLAMA_MODEL         = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
@@ -41,63 +39,57 @@ SERVICE_ENDPOINTS: dict[str, str] = {
     "computerterminal": URL_COMPUTERTERMINAL
 }       
 
-class Plan(BaseModel):
-    route: list[Literal["websurfer","filesurfer","coder","computerterminal"]] = Field(
-        ..., example=["websurfer","filesurfer","coder","computerterminal"]
-    )
-    input: InvokeBody
-
-class Step(BaseModel):
-    service: Literal["websurfer","filesurfer","coder","computerterminal"]
-    status: Literal["ok","fail"]
-    message: Optional[Msg] = None
-    latency_ms: int
-
-class FinalResult(BaseModel):
-    status: Literal["ok","fail"]
-    steps: list[Step]
-    total_latency_ms: int
-
-# --- HTTP Participant ---
-class HttpParticipant:
+# --- Wrapper for Agent to leverage http ---
+class HttpChatAgent(AssistantAgent): #
     """
     AutoGen 참가자처럼 동작하는 경량 래퍼
     - on_messages(messages, Cancellation Token) 인터페이스 제공
     - 내부에서 마이크로서비스의 /invoke HTTP 엔드포인터 호출
+    - AssistantAgent에 구현되어있는 여러 메소드들 중 현재는 on_messages만 구현
     """
     def __init__(self, name: str, endpoint: str, timeout: float = REQUEST_TIMEOUT):
         self.name = name
         self.endpoint = endpoint
         self.timeout = timeout
-    async def on_messages(self, messages: list[ChatMessage], cacellation_token: Optional[CancellationToken] = None) -> ChatMessage:
-        # ChatMessage를 custom contract 형식인 Msg로 직렬화
-        payload = {
-            "messages": [
-                {
-                    "type": "TextMessage",
-                    "source": (m.source or "orchestrator") if hasattr(m, "source") else "orchestrator",
-                    "content": getattr(m, "content", ""),
-                }
-                for m in messages
-            ],
-            "options": {}
-        }
-        headers = {}
-        if AUTH_TOKEN:
-            headers["Authorization"] = AUTH_TOKEN
-        
+
+    def name(self) -> str:
+        return self.name
+    
+    def endpoint(self) -> str:
+        return self.endpoint
+    
+    def description(self) -> str:
+        return f"HTTP-based Assistant Agent for {self.name} at {self.endpoint}"
+    
+    async def on_messages(
+            self,
+            messages: Sequence[ChatMessage],
+        ) -> Response:
+        # TODO: 각 Agent들에 구현되어 있는 세부 latency 측정을 저장하는 부분은 구현 예정
+        messages = [Msg(type="TextMessage", source="orchestrator", content= message) for message in messages]
+        payload = InvokeBody(
+            messages = messages,
+            options = {}
+        )
+
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            response = await client.post(self.endpoint + "/invoke", json=payload, headers=headers)
-            response.raise_for_status()
-            result = response.json()
-        
-        msg = result.get("message") or {"content": ""}
-        return TextMessage(content=msg.get("content",""), source=self.name)
+            invoke_result: InvokeResult = await client.post(self.endpoint + "/invoke", json=payload.model_dump_json())
+            invoke_result.raise_for_status()
+
+        response = invoke_result.response
+        if not isinstance(response, Response):
+            raise ValueError(f"Agent {self.name} did not return a valid Response object.")
+        elif invoke_result.status != "ok":
+            raise ValueError(f"Agent {self.name} returned an error status: {invoke_result.status}")
+        response = invoke_result.get("response")
+        return response
 
 # --- Lazy Singleton ---
 _client = None
 _agent = None
-def get_agent() -> MagenticOneOrchestrator:
+def get_agent() -> MagenticOneGroupChat:
+    # Magentic-One의 구성에 따르면 get_team()이 더 적절한 함수명 일 수도 있으나, 
+    # 마이크로서비스 관점에서 orchestrator가 단일 서비스이면서 팀 전체를 관리하는 역할이므로 get_agent()로 명명 (이후 수정 가능)
     global _client, _agent
     if _agent is None:
         if _client is None:
@@ -108,35 +100,17 @@ def get_agent() -> MagenticOneOrchestrator:
                 retries=RETRIES
             )
         participants = {
-            "filesurfer": HttpParticipant("filesurfer", SERVICE_ENDPOINTS["filesurfer"]),
-            "websurfer": HttpParticipant("websurfer", SERVICE_ENDPOINTS["websurfer"]),
-            "coder": HttpParticipant("coder", SERVICE_ENDPOINTS["coder"]),
-            "computerterminal": HttpParticipant("computerterminal", SERVICE_ENDPOINTS["computerterminal"]),
+            "filesurfer": HttpChatAgent("filesurfer", SERVICE_ENDPOINTS["filesurfer"]),
+            #"websurfer": HttpChatAgent("websurfer", SERVICE_ENDPOINTS["websurfer"]), #WebSurfer는 기본적으로 브라우저와의 상호작용 필요하기 때문에 llm 모델이 이를 지원하지 않는 경우 사용 불가.
+            "coder": HttpChatAgent("coder", SERVICE_ENDPOINTS["coder"]),
+            "computerterminal": HttpChatAgent("computerterminal", SERVICE_ENDPOINTS["computerterminal"]),
         }
-        _agent = MagenticOneOrchestrator(
-            name =  "Magentic-One Orchestrator",
+        _agent = MagenticOneGroupChat(
+            name =  "Micro Magentic-One Orchestrator",
             model_client = _client,
-            participant_names = list(participants.keys()),
+            participant = list(participants.values()), # participant는 Magentic-One을 구성하는 하위 에이전트들의 목록.
         )
     return _agent
-
-async def call_service(url: str, payload: dict) -> dict:
-    headers = {}
-    if AUTH_TOKEN:
-        headers["Authorization"] = AUTH_TOKEN
-    
-    last_exc = None
-    for attempt in range(RETRIES + 1):
-        start_time_perf = time.perf_counter()
-        try:
-            async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-                response = await client.post(url, json=payload, headers=headers)
-                response.raise_for_status()
-            return {"status": response.get("status", "fail"), "message": response.get("message"), "latency_ms": int((time.perf_counter()-start_time_perf)*1000)}
-        except Exception as e:
-            last_exc = e
-            await asyncio.sleep(0.2 * (attempt + 1))
-    raise HTTPException(502, f"call failed: {url} ({last_exc})")
 
 # --- Endpoints ---
 @app.get("/health")
@@ -155,43 +129,22 @@ def ready():
     except Exception as e:
         raise HTTPException(503, f"not ready: {e}")
 
-class OrchestrateInput(BaseModel):
-    input: InvokeBody
-
-@app.post("/invoke", response_model=FinalResult)
-async def orchestrate(body: OrchestrateInput = Body(...)):
+@app.post("/invoke", response_model=InvokeResult)
+async def orchestrate(body: InvokeBody = Body(...)):
     """
-    Magentic-One Orchestrator    """
+    Magentic-One Orchestrator    
+    """
     start_time_perf = time.perf_counter()
-    plan = body.input
-    steps = []
-    
+     # 현재는 messages의 첫 번째 메시지만 작업으로 간주. 향후 다중 메시지 지원 가능.
+    task:str = body.messages[0].content if body.messages else "No task provided"
     orchestrator = get_agent()
-
-    msgs: list[ChatMessage] = [
-        TextMessage(content=msg.content, source=msg.source) for msg in body.input.messages
-    ]
-    steps: list[Step] = []
-    ct = CancellationToken()
-
-    for _ in range(MAX_STEPS):
-        # Get the next service in the route
-        response = await orchestrator.on_messages(msgs, ct)
-        content = getattr(response, "content", "")
-        source = getattr(response, "source", "orchestrator")
-
-        msg = Msg(type="TextMessage", source=source, content=content)
-        msgs.append(msg)
-
-        # 간단한 종료 휴리스틱: orchestrator가 'stop' 신호를 content에 담는 경우
-        # (실제 구현체에 맞춰 종료 조건/메타 신호를 파싱하도록 수정 가능)
-        if isinstance(content, str) and content.strip().lower().startswith("[done]"):
-            break
-
-        steps.append(Step(service=source if source in SERVICE_ENDPOINTS else "unknown", status="ok", message=msg))
-
-        if len(steps) >= MAX_STEPS:
-            break
     
-    overall = "ok" if steps else "fail"
-    return FinalResult(status=overall, steps=steps, total_latency_ms=int((time.perf_counter() - start_time_perf) * 1000))
+    # task는 str, TextMessage, ChatMessage 모두 가능.
+    result: TaskResult = await orchestrator.run(task=task, cancellation_token=CancellationToken())
+    finish_time_perf = time.perf_counter()
+    return InvokeResult(
+        status="ok" if result.status == "completed" else "fail",
+        response=result,
+        elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
+    )
+    

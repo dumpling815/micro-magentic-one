@@ -4,11 +4,11 @@
 # 즉, user 디렉토리의 app.py는 최초 유저의 요청을 발생시키는 역할과 동시에, ComputerTerminal agent의 역할도 수행함.
 
 from fastapi import FastAPI, HTTPException, Body
-import time, os, httpx
+import time, os, httpx, re
 from RequestSchema import InvokeBody, InvokeResult, Msg
-from ..orchestrator import FinalResult
 
 from autogen_agentchat.messages import TextMessage
+from autogen_agentchat.base import Response
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
 from autogen_ext.code_executors.local import LocalCommandLineCodeExecutor
 # 해당 모듈은 local이긴 하지만, user의 컴퓨터 자체를 컨테이너로 띄우기 때문에 실험 환경 시스템 안정성을 해치지 않음.
@@ -18,10 +18,7 @@ app = FastAPI(title="Magentic-One User")
 # --- Env ---
 WORKDIR = os.getenv("WORKDIR", "/workspace")
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
-ALLOW_CMDS = os.getenv("ALLOW_CMDS") # e.g. python, pip, ls, cat, cd
-DENY_CMDS = os.getenv("DENY_CMDS") # e.g. rm, sudo
 CLEANUP_TEMP_FILES = os.getenv("CLEANUP_TEMP_FILES", "false").lower() == "true"
-
 ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://orchestrator:8000")
 
 # --- Lazy Singleton ---
@@ -38,6 +35,21 @@ def get_executor() -> LocalCommandLineCodeExecutor:
         )
     return _executor
 
+# 파싱 부분을 찾지 못했을 때, 코드 블록 파싱을 직접 구현해봄.
+# CODE_BLOCK_PATTERN = r"```[ \t]*(\w+)?[ \t]*\r?\n(.*?)\r?\n[ \t]*```"
+# def code_block_parser(msg: TextMessage) -> CodeBlock:
+#     # This function gets the code block from the response message and return the pure python code.
+#     # Leverages Regular Expression.
+#     regex = re.compile(CODE_BLOCK_PATTERN, re.DOTALL)
+#     text = msg.content
+#     matches = regex.search(text)
+#     if matches:
+#         language = (matches.group(1) or "unknown").lower()
+#         code = matches.group(2).strip("\n")
+#         return CodeBlock(code=code, language=language)
+#     else:
+#         raise ValueError("No code block found in the message.")
+
 
 # --- Endpoints ---
 @app.get("/health")
@@ -53,17 +65,17 @@ def ready():
         raise HTTPException(503, f"not ready: {e}")
     
 @app.post("/invoke", response_model=InvokeResult)
-async def invoke(body: InvokeBody = Body(...)):
+async def execute(body: InvokeBody = Body(...)):
     """
     Handle incoming messages, process them using LocalCommandLineExecutor, and return the response.
     """
     start_time_perf = time.perf_counter()
-    code_blocks = []
+    py_msgs =[]
     
     for m in body.messages:
         if m.type != "TextMessage":
             raise HTTPException(status_code=400, detail=f"Unsupported message type: {m.type}")
-        code_blocks.append(TextMessage(content=m.content, source=m.source))
+        py_msgs.append(TextMessage(content=m.content, source=m.source))
     
     executor = get_executor() # LocalCommandLineExecutor agent
     # LocalCommandLineExecutor는 Code Block을 포함한 Message를 받아서 해당 코드를 Local 환경에서 실행 후
@@ -71,39 +83,39 @@ async def invoke(body: InvokeBody = Body(...)):
     # https://microsoft.github.io/autogen/0.2/docs/tutorial/code-executors/ 참조.
     
     try:
-        code_result = await executor.execute_code_blocks(code_blocks=code_blocks, cancellation_token=CancellationToken())
-        # code_result는 CodeResult 클래스 : {exit_code: int, output: str} 형태.
+        code_result: Response = await executor.on_messages(py_msgs, CancellationToken())
+        # code_result = await executor.execute_code_blocks(code_blocks=code_blocks, cancellation_token=CancellationToken())
+        # code_result는 CommandLineCodeResult 클래스 : {exit_code: int, output: str} 형태.
+        # code executor의 on_messages() 메서드는 메시지에서 코드 블록을 추출하는 함수 extract_code_blocks_from_messages()와
+        # execute_code_blocks() 메서드를 내부적으로 호출함.
         return InvokeResult(
             status="ok", 
             message=Msg(type="TextMessage", source="computerterminal", content=code_result), 
-            elapsed={"Code Execution latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+            elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
     except Exception as e:
         return InvokeResult(
             status="fail", 
             message=Msg(type="TextMessage", source="computerterminal", content=code_result), 
-            elapsed={"Code Execution latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+            elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
     
 
 # --- Request to Orchestrator ---
-@app.post("/start", response_model=FinalResult)
-async def start(msg: Msg = Body(...)):
+@app.post("/start", response_model=InvokeResult)
+async def run(body: InvokeBody = Body(...)):
     """
-    Start the orchestrator.
-    Input will be a message from the user, which will be used to create a plan at orchestrator.
+    Run the orchestrator(Entire Magentic-One System).
     The orchestrator will handle the rest of the process and return the final result.
     """
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
         try:
-            body = InvokeBody(messages=[msg], options={})
-            response = await client.post(
+            #body = InvokeBody([msg], options={})
+            invoke_result: InvokeResult = await client.post(
                 ORCHESTRATOR_URL+"/invoke",
-                json=body.model_dump(),
+                json=body.model_dump_json(),
             )
-            response.raise_for_status()
-            result = response.json()
-            return FinalResult(**result)
+            return invoke_result
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
         except Exception as e:
