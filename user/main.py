@@ -59,7 +59,7 @@ def main():
                 user_msg = Msg(type="TextMessage", source="user", content=user_input)
                 body = InvokeBody(messages=[user_msg])
 
-                final_response: InvokeResult = client.post(ENTRYPOINT_URL, json=body.model_dump()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
+                final_response: InvokeResult = client.post(ENTRYPOINT_URL, json=body.model_dump_json()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
                 result = InvokeResult(**final_response) # 응답 형태는 Json, 역직렬화.
                 task_result: TaskResult = result.response if isinstance(result.response, TaskResult) else None 
 
@@ -75,6 +75,14 @@ def main():
                 print("####################################")
                 print(f"E2E Latency(ms): {e2e_time_per_request_ms[-1]}\nOrchestration Latency(ms): {orchestrate_time_per_request_ms[-1]}")
                 print("####################################")
+                print(f"Enter 'y' if you want to see the full conversation history, anything else to continue.",end="")
+                if input().lower() == 'y':
+                    if task_result and task_result.messages:
+                        print("Full Conversation History:")
+                        for msg in task_result.messages:
+                            print(f"[{msg.source}]: {msg.content}")
+                    else:
+                        print("No conversation history available.")
             except httpx.RequestError as e:
                 print(f"Request failed: {e}")
             except (KeyboardInterrupt, EOFError):
