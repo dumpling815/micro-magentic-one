@@ -3,14 +3,12 @@
 # 빠르게 띄우기 위해서는 OpenAIChatCompletionClient를 사용하고, 이후에 OSS 로컬 멀티모달 대안을 검토해야함.
 
 from fastapi import FastAPI, Body, HTTPException
-from pydantic import BaseModel, Field
-from typing import Any, Literal
 import os, time
-from RequestSchema import InnvokeBody, InvokeResult
+from RequestSchema import InvokeBody, InvokeResult
 
 from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
-from autogen_ext.agent.websurfer import MultimodalWebSurfer
+from autogen_ext.agents.web_surfer import MultimodalWebSurfer
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient # If possible, we'll use oss model in ollama
 
@@ -66,7 +64,7 @@ def ready():
         raise HTTPException(503, f"not ready: {e}")
     
 @app.post("/invoke", response_model=InvokeResult)
-async def invoke(body: InnvokeBody = Body(...)):
+async def invoke(body: InvokeBody = Body(...)):
     start_time_perf = time.perf_counter()
     # JSON -> AutoGen message objects
     py_msgs = []
@@ -80,16 +78,14 @@ async def invoke(body: InnvokeBody = Body(...)):
 
     try:
         response = await agent.on_messages(py_msgs, CancellationToken())
-        chat_msg = getattr(response, "chat_message", None)
-        content = getattr(chat_msg, "content", "") if chat_msg else str(response)
-        return {
-            "status": "ok",
-            "message": {"type": "TextMessage", "source": "websurfer", "content": content},
-            "elapsed": {"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
-        }
     except Exception as e:
-        return {
-            "status": "fail",
-            "message": None,
-            "elapsed": {"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
-        }
+        return InvokeResult(
+            status="fail",
+            response=response,
+            elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
+        )
+    return InvokeResult(
+        status="ok",
+        response=response,
+        elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
+    )

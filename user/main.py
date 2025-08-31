@@ -55,39 +55,40 @@ def main():
                     print("Task cannot be empty. Please enter a valid request.")
                     break
 
+                # Orchestration Request
                 start_time_perf = time.perf_counter()
                 user_msg = Msg(type="TextMessage", source="user", content=user_input)
                 body = InvokeBody(messages=[user_msg])
-
                 final_response: InvokeResult = client.post(ENTRYPOINT_URL, json=body.model_dump_json()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
-                result = InvokeResult(**final_response) # 응답 형태는 Json, 역직렬화.
-                task_result: TaskResult = result.response if isinstance(result.response, TaskResult) else None 
-
-                # Latency Measurement
-                end_time_perf = time.perf_counter()
-                e2e_time_per_request_ms.append(int((end_time_perf - start_time_perf)*1000))
-                orchestrate_time_per_request_ms.append(result.elapsed.get("orchestration_latency_ms", 0))
-
-
-                # Display Result of the Entire System
-                print("####################################")
-                print(f"Final Message from Micro Magentic-One System:\n->  {task_result.messages[-1].content if task_result and task_result.messages else 'No message returned'}")
-                print("####################################")
-                print(f"E2E Latency(ms): {e2e_time_per_request_ms[-1]}\nOrchestration Latency(ms): {orchestrate_time_per_request_ms[-1]}")
-                print("####################################")
-                print(f"Enter 'y' if you want to see the full conversation history, anything else to continue.",end="")
-                if input().lower() == 'y':
-                    if task_result and task_result.messages:
-                        print("Full Conversation History:")
-                        for msg in task_result.messages:
-                            print(f"[{msg.source}]: {msg.content}")
-                    else:
-                        print("No conversation history available.")
+            
             except httpx.RequestError as e:
                 print(f"Request failed: {e}")
             except (KeyboardInterrupt, EOFError):
                 print("Terminating Agent System...")
                 break
+
+            # Deserialization
+            result = InvokeResult(**final_response) # 응답 형태는 Json, 역직렬화.
+            task_result: TaskResult = result.response if isinstance(result.response, TaskResult) else None 
+
+            # Latency Measurement
+            end_time_perf = time.perf_counter()
+            e2e_time_per_request_ms.append(int((end_time_perf - start_time_perf)*1000))
+            orchestrate_time_per_request_ms.append(result.elapsed.get("orchestration_latency_ms", 0))
+            # Display Result of the Entire System
+            print("####################################")
+            print(f"Final Message from Micro Magentic-One System:\n->  {task_result.messages[-1].content if task_result and task_result.messages else 'No message returned'}")
+            print("####################################")
+            print(f"E2E Latency(ms): {e2e_time_per_request_ms[-1]}\nOrchestration Latency(ms): {orchestrate_time_per_request_ms[-1]}")
+            print("####################################")
+            print(f"Enter 'y' if you want to see the full conversation history, anything else to continue.",end="")
+            if input().lower() == 'y':
+                if task_result and task_result.messages:
+                    print("Full Conversation History:")
+                    for msg in task_result.messages:
+                        print(f"[{msg.source}]: {msg.content}")
+                else:
+                    print("No conversation history available.")
 
 if __name__ == "__main__":
     main()

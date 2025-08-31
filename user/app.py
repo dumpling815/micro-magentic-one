@@ -88,17 +88,17 @@ async def execute(body: InvokeBody = Body(...)):
         # code_result는 CommandLineCodeResult 클래스 : {exit_code: int, output: str} 형태.
         # code executor의 on_messages() 메서드는 메시지에서 코드 블록을 추출하는 함수 extract_code_blocks_from_messages()와
         # execute_code_blocks() 메서드를 내부적으로 호출함.
-        return InvokeResult(
-            status="ok", 
-            message=Msg(type="TextMessage", source="computerterminal", content=code_result), 
-            elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
-        )
     except Exception as e:
         return InvokeResult(
             status="fail", 
             message=Msg(type="TextMessage", source="computerterminal", content=code_result), 
             elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
+    return InvokeResult(
+        status="ok", 
+        message=Msg(type="TextMessage", source="computerterminal", content=code_result), 
+        elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+    )
     
 
 # --- Request to Orchestrator ---
@@ -115,8 +115,8 @@ async def run(body: InvokeBody = Body(...)):
                 ORCHESTRATOR_URL+"/invoke",
                 json=body.model_dump_json(),
             )
-            return invoke_result
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+        return invoke_result

@@ -1,12 +1,11 @@
 from fastapi import FastAPI, Body, HTTPException
-from pydantic import BaseModel, Field
-from typing import Any, Literal
 import time, os
 from RequestSchema import InvokeBody, InvokeResult
 
 # == AutoGen imports ==
 from autogen_ext.agents.file_surfer import FileSurfer
 from autogen_ext.models.ollama import OllamaChatCompletionClient
+from autogen_agentchat.base import Response
 from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken # Supports task cancellation while async processing
 
@@ -52,16 +51,13 @@ async def invoke(body: InvokeBody = Body(...)):
     try:
         response = await agent.on_messages(py_msgs, CancellationToken())
     except Exception as e:
-        return {"status":"fail",
-                "message": None,
-                "elapsed":{"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
-        }
-    
-    chat_msg = getattr(response, "chat_message", None)
-    content = getattr(chat_msg, "content", "") if chat_msg else str(response)
-
-    return {
-        "status": "ok",
-        "message": {"type": "TextMessage", "source":"filesurfer", "content": content},
-        "elapsed": {"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
-    }
+        return InvokeResult(
+            status="fail",
+            response = response,
+            elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
+        )
+    return InvokeResult(
+        status="ok",
+        response = response,
+        elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
+    )

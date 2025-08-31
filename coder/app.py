@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Body, HTTPException
 import time, os
-from RequestSchema import InvokeBody, InvokeResult, Msg
+from RequestSchema import InvokeBody, InvokeResult
 
 app = FastAPI(title="Magentic-One Coder Agent")
 
@@ -64,17 +64,14 @@ async def invoke(body: InvokeBody = Body(...)):
 
     try:
         response: Response = await coder.on_messages(py_msgs, CancellationToken())
-        if not isinstance(response, Response):
-            raise ValueError("Coder agent did not return a valid Response object.")
-        
-        return InvokeResult(
-            status="ok", 
-            response=response, 
-            elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
-        )
     except Exception as e:
         return InvokeResult(
             status="fail", 
             response=response, 
             elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
+    return InvokeResult(
+        status="ok", 
+        response=response, 
+        elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+    )
