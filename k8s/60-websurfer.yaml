@@ -1,0 +1,102 @@
+# =========================
+# WEBSURFER (GPU 사용)
+# =========================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websurfer
+  namespace: micro-magentic-one
+  labels: { app: websurfer, project: micro-magentic-one }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: websurfer }
+  template:
+    metadata:
+      labels: { app: websurfer, project: micro-magentic-one }
+    spec:
+      # (선택) GPU 노드 선호
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: accelerator
+      #               operator: In
+      #               values: ["gpu"]
+
+      initContainers:
+        - name: ollama-prefetch
+          image: ollama/ollama:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: micro-magentic-one-orch-config }
+          command: ["bash","-lc"]
+          args:
+            - |
+              ollama serve & sleep 2
+              MODELS="${OLLAMA_PREFETCH_MODELS:-llama3.2:1b}"
+              for m in $MODELS; do
+                echo "Prefetching model: $m"
+                ollama pull "$m" || { echo "Failed to pull $m"; exit 1; }
+              done
+          volumeMounts:
+            - { name: ollama-models, mountPath: /root/.ollama }
+
+      containers:
+        - name: websurfer
+          image: docker.io/minuk0815/micro-magentic-one-websurfer:0.0.2
+          imagePullPolicy: IfNotPresent
+          ports: [ { containerPort: 8080 } ]
+          envFrom:
+            - configMapRef: { name: micro-magentic-one-orch-config }
+          volumeMounts:
+            - { name: shared-data, mountPath: /data }
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "500m", memory: "512Mi" }
+            limits:   { cpu: "2",    memory: "1Gi" }
+
+        - name: ollama
+          image: ollama/ollama:latest
+          imagePullPolicy: IfNotPresent
+          ports: [ { containerPort: 11434 } ]
+          envFrom:
+            - configMapRef: { name: micro-magentic-one-orch-config }
+          env:
+            - name: OLLAMA_KEEP_ALIVE
+              valueFrom: { configMapKeyRef: { name: micro-magentic-one-orch-config, key: OLLAMA_KEEP_ALIVE } }
+            - name: OLLAMA_NUM_PARALLEL
+              valueFrom: { configMapKeyRef: { name: micro-magentic-one-orch-config, key: OLLAMA_NUM_PARALLEL } }
+          volumeMounts:
+            - { name: ollama-models, mountPath: /root/.ollama }
+          readinessProbe:
+            tcpSocket: { port: 11434 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "1", memory: "8Gi" }
+            limits:
+              nvidia.com/gpu: 1
+              cpu: "4"
+              memory: "16Gi"
+
+      volumes:
+        - { name: shared-data,   persistentVolumeClaim: { claimName: micro-magentic-one-pvc } }
+        - { name: ollama-models, persistentVolumeClaim: { claimName: ollama-models-pvc } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: websurfer
+  namespace: micro-magentic-one
+  labels: { app: websurfer, project: micro-magentic-one }
+spec:
+  selector: { app: websurfer }
+  ports:
+    - { name: http, port: 8080, targetPort: 8080, protocol: TCP }
+  type: ClusterIP

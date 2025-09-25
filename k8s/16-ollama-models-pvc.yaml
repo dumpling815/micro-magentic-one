@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models-pvc
+  namespace: micro-magentic-one
+spec:
+  accessModes: [ ReadWriteMany ]
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: rwx-storage

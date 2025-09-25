@@ -16,14 +16,14 @@ app = FastAPI(title="Magentic-One Orchestrator")
 
 
 # --- Env ---
-URL_FILESURFER       = os.getenv("URL_FILESURFER", "http://filesurfer:8000")
-URL_WEBSURFER        = os.getenv("URL_WEBSURFER", "http://websurfer:8000")
-URL_CODER            = os.getenv("URL_CODER", "http://coder:8000")
-URL_COMPUTERTERMINAL             = os.getenv("URL_COMPUTERTERMINAL", "http://computerterminal:8000")
+FILESURFER_URL       = os.getenv("FILESURFER_URL", "http://filesurfer.micro-magentic-one.svc.cluster.local:8000")
+WEBSURFER_URL        = os.getenv("WEBSURFER_URL", "http://websurfer.micro-magentic-one.svc.cluster.local:8000")
+CODER_URL            = os.getenv("CODER_URL", "http://coder.micro-magentic-one.svc.cluster.local:8080")
+COMPUTERTERMINAL_URL = os.getenv("COMPUTERTERMINAL_URL", "http://user.micro-magentic-one.svc.cluster.local:8000")
 
 MODEL_PROVIDER       = os.getenv("MODEL_PROVIDER", "ollama")  # e.g. ollama, openai, etc.
-OLLAMA_MODEL         = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
-OLLAMA_HOST          = os.getenv("OLLAMA_HOST", "http://ollama:11434")  
+OLLAMA_MODEL         = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
+OLLAMA_HOST          = os.getenv("OLLAMA_HOST", "http://localhost:11434")  
 
 REQUEST_TIMEOUT      = float(os.getenv("REQUEST_TIMEOUT", "30"))
 RETRIES              = int(os.getenv("RETRIES", "1"))             # 실패 시 추가 재시도 횟수
@@ -33,10 +33,10 @@ AUTH_TOKEN           = os.getenv("AUTH_TOKEN")  # 서비스 공통 토큰이 잇
 
 APPEND_PREVIOUS      = os.getenv("APPEND_PREVIOUS", "true").lower() == "true"  # 이전 스텝 응답 메시지를 다음 입력에 누적
 SERVICE_ENDPOINTS: dict[str, str] = {
-    "websurfer": URL_WEBSURFER,
-    "filesurfer": URL_FILESURFER,
-    "coder": URL_CODER,
-    "computerterminal": URL_COMPUTERTERMINAL
+    "websurfer": WEBSURFER_URL,
+    "filesurfer": FILESURFER_URL,
+    "coder": CODER_URL,
+    "computerterminal": COMPUTERTERMINAL_URL
 }       
 
 # --- Wrapper for Agent to leverage http ---

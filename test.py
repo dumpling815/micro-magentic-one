@@ -77,8 +77,8 @@ async def test_func():
         code_blocks = [code_block]
         print(f"#############Executing the code block#############")
         code_execution_result = await executor.execute_code_blocks(code_blocks, CancellationToken())
-        print(f"#############Code Executino Result")
-        print(code_execution_result)
+        print(f"#############Code Execution Result")
+        print(f"Exit Code: {code_execution_result.exit_code}\nOutput: {code_execution_result.output}\nCode file: {code_execution_result.code_file}")
     except Exception as e:
         print(f"Error: {e}")
 

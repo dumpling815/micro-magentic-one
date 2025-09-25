@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: micro-magentic-one-user
+  namespace: micro-magentic-one
+  labels:
+    app: user
+    project: micro-magentic-one
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user
+  template:
+    metadata:
+      labels:
+        app: user
+        project: micro-magentic-one
+    spec:
+      containers:
+        - name: user
+          image: docker.io/minuk0815/micro-magentic-one-user:0.0.2 # Tag version should be correct.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: micro-magentic-one-orch-config
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: micro-magentic-one-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user
+  namespace: micro-magentic-one
+  labels:
+    app: user
+    project: micro-magentic-one
+spec:
+  selector:
+    app: user
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP
