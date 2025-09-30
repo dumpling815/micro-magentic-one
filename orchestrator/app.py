@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Body, HTTPException
 from typing import Sequence
 import time, os, httpx
-from RequestSchema import Msg, InvokeBody, InvokeResult
+from common.request_schema import InvokeBody, InvokeResult, Msg
 
 # --- AutoGen imports ---
 from autogen_agentchat.messages import TextMessage, ChatMessage # ChatMessage는 TextMessage를 포함하는 Uninon. (다양한 메시지 타입 지원을 위해)

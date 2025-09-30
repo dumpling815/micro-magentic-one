@@ -4,3 +4,4 @@ autogen_ext==0.7.2
 fastapi==0.116.1
 httpx==0.28.1
 pydantic==2.11.7
+uvicorn>=0.30

@@ -9,11 +9,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt || true
+
+COPY common ./common
+
+COPY websurfer ./websurfer
+COPY websurfer/requirements.txt ./websurfer/requirements.txt
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential && \
-    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r websurfer/requirements.txt && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY . .
@@ -22,4 +28,4 @@ COPY . .
 RUN chown -R pwuser:pwuser /app
 USER pwuser
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python3", "-m", "uvicorn", "websurfer.app:app", "--host", "0.0.0.0", "--port", "8080"]

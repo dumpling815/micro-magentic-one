@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Body, HTTPException
 import time, os
-from RequestSchema import InvokeBody, InvokeResult
+from common.request_schema import InvokeBody, InvokeResult, Msg
 
 # == AutoGen imports ==
 from autogen_ext.agents.file_surfer import FileSurfer

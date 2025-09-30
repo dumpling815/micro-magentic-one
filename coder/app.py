@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Body, HTTPException
 import time, os
-from RequestSchema import InvokeBody, InvokeResult
+from common.request_schema import InvokeBody, InvokeResult
 
 app = FastAPI(title="Magentic-One Coder Agent")
 

@@ -41,18 +41,18 @@ spec:
                 echo "Prefetching model: $m"
                 ollama pull "$m" || { echo "Failed to pull $m"; exit 1; }
               done
-          volumeMounts:
-            - { name: ollama-models, mountPath: /root/.ollama }
+          # volumeMounts:
+          #   - { name: ollama-models, mountPath: /root/.ollama }
 
       containers:
         - name: websurfer
-          image: docker.io/minuk0815/micro-magentic-one-websurfer:0.0.2
+          image: docker.io/minuk0815/micro-magentic-one-websurfer:0.0.4 # Tag version should be correct.
           imagePullPolicy: IfNotPresent
           ports: [ { containerPort: 8080 } ]
           envFrom:
             - configMapRef: { name: micro-magentic-one-orch-config }
-          volumeMounts:
-            - { name: shared-data, mountPath: /data }
+          # volumeMounts:
+          #   - { name: shared-data, mountPath: /data }
           readinessProbe:
             httpGet: { path: /health, port: 8080 }
             initialDelaySeconds: 5
@@ -72,8 +72,8 @@ spec:
               valueFrom: { configMapKeyRef: { name: micro-magentic-one-orch-config, key: OLLAMA_KEEP_ALIVE } }
             - name: OLLAMA_NUM_PARALLEL
               valueFrom: { configMapKeyRef: { name: micro-magentic-one-orch-config, key: OLLAMA_NUM_PARALLEL } }
-          volumeMounts:
-            - { name: ollama-models, mountPath: /root/.ollama }
+          # volumeMounts:
+          #   - { name: ollama-models, mountPath: /root/.ollama }
           readinessProbe:
             tcpSocket: { port: 11434 }
             initialDelaySeconds: 5
@@ -85,9 +85,9 @@ spec:
               cpu: "4"
               memory: "16Gi"
 
-      volumes:
-        - { name: shared-data,   persistentVolumeClaim: { claimName: micro-magentic-one-pvc } }
-        - { name: ollama-models, persistentVolumeClaim: { claimName: ollama-models-pvc } }
+      # volumes:
+      #   - { name: shared-data,   persistentVolumeClaim: { claimName: micro-magentic-one-pvc } }
+      #   - { name: ollama-models, persistentVolumeClaim: { claimName: ollama-models-pvc } }
 ---
 apiVersion: v1
 kind: Service

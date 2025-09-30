@@ -5,7 +5,7 @@
 
 from fastapi import FastAPI, HTTPException, Body
 import time, os, httpx, re
-from RequestSchema import InvokeBody, InvokeResult, Msg
+from common.request_schema import InvokeBody, InvokeResult, Msg
 
 from autogen_agentchat.messages import TextMessage
 from autogen_agentchat.base import Response
@@ -54,7 +54,7 @@ def get_executor() -> LocalCommandLineCodeExecutor:
 # --- Endpoints ---
 @app.get("/health")
 def health():
-    return {"status":"ok","workdir":WORKDIR,"cleanup_temp_files":CLEANUP_TEMP_FILES,"timeout":REQUEST_TIMEOUT}
+    return {"status":"ok"}
 
 @app.get("/ready")
 def ready():

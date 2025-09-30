@@ -4,7 +4,7 @@
 
 from fastapi import FastAPI, Body, HTTPException
 import os, time
-from RequestSchema import InvokeBody, InvokeResult
+from common.request_schema import InvokeBody, InvokeResult, Msg
 
 from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
