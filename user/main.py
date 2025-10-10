@@ -23,10 +23,11 @@ def agent_health_check():
     except httpx.HTTPError as e:
         print(f"Error during health check: {e}")
     try:
-        response = client.get("http://localhost:8080/health")
-        if response.status_code != 200:
-            print(f"Computerterminal health check failed: {response.text}")
-            return False
+        with httpx.Client(timeout=5.0) as client:
+            response = client.get("http://localhost:8080/health")
+            if response.status_code != 200:
+                print(f"Computerterminal health check failed: {response.text}")
+                return False
     except httpx.HTTPError as e:
         print(f"Error during health check(computer terminal): {e}")
         return False
