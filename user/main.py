@@ -10,24 +10,27 @@ def agent_health_check():
     # Check if all agents are healthy
     # TODO: health_check는 orchestrator에 둬야하는게 맞지 않나. -> 점검 필요.
     HEALTH_PATH = os.getenv("HEALTH_PATH")
-    AGENT_PORT = os.getenv("AGENT_PORT")
     agents = ["filesurfer", "websurfer", "coder", "orchestrator"]
     agent_urls = [os.getenv(agent.upper() + "_URL") + HEALTH_PATH for agent in agents]
     try:
         with httpx.Client(timeout=5.0) as client:
             for agent_url in agent_urls:
                 response = client.get(agent_url)
+                print(f"Agent {agent_url} response : {response}")
                 if response.status_code != 200:
                     print(f"Agent {agent_url} health check failed: {response.text}")
                     return False
-            resonse = client.get("http://localhost:8080/health")
-            if response.status_code != 200:
-                print(f"Computerterminal health check failed: {response.text}")
-            return False
-        return True
     except httpx.HTTPError as e:
         print(f"Error during health check: {e}")
+    try:
+        response = client.get("http://localhost:8080/health")
+        if response.status_code != 200:
+            print(f"Computerterminal health check failed: {response.text}")
+            return False
+    except httpx.HTTPError as e:
+        print(f"Error during health check(computer terminal): {e}")
         return False
+    return True
 
 def main():
     setup_trial = 0
@@ -48,6 +51,7 @@ def main():
             time.sleep(5)
     
     # Start the main loop if all agents are ready
+    ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL")
     with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
         e2e_time_per_request_ms = []
         orchestrate_time_per_request_ms = []
@@ -67,7 +71,7 @@ def main():
                 start_time_perf = time.perf_counter()
                 user_msg = Msg(type="TextMessage", source="user", content=user_input)
                 body = InvokeBody(messages=[user_msg])
-                final_response: InvokeResult = client.post("http://localhost:8080", json=body.model_dump_json()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
+                final_response: InvokeResult = client.post(ORCHESTRATOR_URL + "/invoke", json=body.model_dump()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
             
             except httpx.RequestError as e:
                 print(f"Request failed: {e}")
