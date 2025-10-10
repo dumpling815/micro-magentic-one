@@ -59,7 +59,7 @@ spec:
             periodSeconds: 10
           resources:
             requests: { cpu: "500m", memory: "512Mi" }
-            limits:   { cpu: "2",    memory: "1Gi" }
+            limits:   { cpu: "2",    memory: "2Gi" }
 
         - name: ollama
           image: ollama/ollama:latest
@@ -74,11 +74,11 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
-            requests: { cpu: "1", memory: "8Gi" }
-            # limits:
-            #   nvidia.com/gpu: 1
-            #   cpu: "4"
-            #   memory: "16Gi"
+            requests: { cpu: "1", memory: "2Gi" }
+            limits:
+              #nvidia.com/gpu: 1
+              cpu: "2"
+              memory: "4Gi"
 
       volumes:
         - { name: shared-data,   persistentVolumeClaim: { claimName: micro-magentic-one-pvc } }
