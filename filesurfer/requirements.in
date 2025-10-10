@@ -1,0 +1,5 @@
+autogen_agentchat==0.7.5
+autogen_core==0.7.5
+autogen_ext==0.7.5
+common==0.1.2
+fastapi==0.118.2
