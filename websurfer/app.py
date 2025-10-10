@@ -9,7 +9,7 @@ from common.request_schema import InvokeBody, InvokeResult, Msg
 from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
 from autogen_ext.agents.web_surfer import MultimodalWebSurfer
-from autogen_ext.models.openai import OpenAIChatCompletionClient
+#from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient # If possible, we'll use oss model in ollama
 
 app = FastAPI(title="Magentic-One Web Surfer")
@@ -30,9 +30,9 @@ def get_agent() -> MultimodalWebSurfer:
     global _client, _agent
     if _agent is None:
         if _client in None:
-            if MODEL_PROVIDER == "openai":
-                _client = OpenAIChatCompletionClient(model=OPENAI_MODEL, timeout=REQUEST_TIMEOUT)
-            elif MODEL_PROVIDER == "ollama":
+            # if MODEL_PROVIDER == "openai":
+            #     _client = OpenAIChatCompletionClient(model=OPENAI_MODEL, timeout=REQUEST_TIMEOUT)
+            if MODEL_PROVIDER == "ollama":
                 _client = OllamaChatCompletionClient(model=OLLAMA_MODEL, host=OLLAMA_HOST, timeout=REQUEST_TIMEOUT)
             else:
                 raise RuntimeError(f"Unsupported model provider: {MODEL_PROVIDER}")

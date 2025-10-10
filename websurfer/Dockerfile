@@ -17,9 +17,7 @@ COPY common ./common
 COPY websurfer ./websurfer
 COPY websurfer/requirements.txt ./websurfer/requirements.txt
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential && \
-    pip install --no-cache-dir -r websurfer/requirements.txt && \
+RUN pip install --no-cache-dir -r websurfer/requirements.txt && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY . .
