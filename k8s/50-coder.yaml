@@ -31,7 +31,7 @@ spec:
           image: ollama/ollama:latest
           imagePullPolicy: IfNotPresent
           envFrom:
-            - configMapRef: { name: micro-magentic-one-orch-config }
+            - configMapRef: { name: micro-magentic-one-config }
           command: ["bash","-lc"]
           args:
             - |
@@ -41,16 +41,16 @@ spec:
                 echo "Prefetching model: $m"
                 ollama pull "$m" || { echo "Failed to pull $m"; exit 1; }
               done
-          # volumeMounts:
-          #   - { name: ollama-models, mountPath: /root/.ollama }
+          volumeMounts:
+            - { name: ollama-models, mountPath: /root/.ollama }
 
       containers:
         - name: coder
-          image: docker.io/minuk0815/micro-magentic-one-coder:0.0.5
+          image: docker.io/minuk0815/micro-magentic-one-coder:0.0.6
           imagePullPolicy: IfNotPresent
           ports: [ { containerPort: 8080 } ]
           envFrom:
-            - configMapRef: { name: micro-magentic-one-orch-config }
+            - configMapRef: { name: micro-magentic-one-config }
           volumeMounts:
             - { name: shared-data, mountPath: /data }
           readinessProbe:
@@ -65,12 +65,12 @@ spec:
           imagePullPolicy: IfNotPresent
           ports: [ { containerPort: 11434 } ]
           envFrom:
-            - configMapRef: { name: micro-magentic-one-orch-config }
+            - configMapRef: { name: micro-magentic-one-config }
           env:
             - name: OLLAMA_KEEP_ALIVE
-              valueFrom: { configMapKeyRef: { name: micro-magentic-one-orch-config, key: OLLAMA_KEEP_ALIVE } }
+              valueFrom: { configMapKeyRef: { name: micro-magentic-one-config, key: OLLAMA_KEEP_ALIVE } }
             - name: OLLAMA_NUM_PARALLEL
-              valueFrom: { configMapKeyRef: { name: micro-magentic-one-orch-config, key: OLLAMA_NUM_PARALLEL } }
+              valueFrom: { configMapKeyRef: { name: micro-magentic-one-config, key: OLLAMA_NUM_PARALLEL } }
           volumeMounts:
             - { name: ollama-models, mountPath: /root/.ollama }
           readinessProbe:
