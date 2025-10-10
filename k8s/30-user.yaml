@@ -26,9 +26,9 @@ spec:
           envFrom:
             - configMapRef:
                 name: micro-magentic-one-orch-config
-          # volumeMounts:
-          #   - name: shared-data
-          #     mountPath: /data
+          volumeMounts:
+            - name: shared-data
+              mountPath: /data # Container 내부에 mountPath (여기서는 /data)가 pvc에 연결되어 있음을 의미.
           readinessProbe:
             httpGet:
               path: /health
@@ -42,10 +42,10 @@ spec:
             limits:
               cpu: "1"
               memory: "512Mi"
-      # volumes:
-      #   - name: shared-data
-      #     persistentVolumeClaim:
-      #       claimName: micro-magentic-one-pvc
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: micro-magentic-one-pvc # pod 전체 수준에서, 이 pod가 어떤 스토리지를 쓸 수 있는지 지정.
 ---
 apiVersion: v1
 kind: Service

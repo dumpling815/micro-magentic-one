@@ -4,7 +4,8 @@ metadata:
   name: ollama-models-pvc
   namespace: micro-magentic-one
 spec:
-  accessModes: [ ReadWriteMany ]
+  accessModes: 
+    - ReadWriteMany 
   resources:
     requests:
       storage: 50Gi

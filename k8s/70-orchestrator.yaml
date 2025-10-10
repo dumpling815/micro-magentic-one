@@ -24,33 +24,33 @@ spec:
 
       # If using OpenAI API or else(not local model), comment this out
       initContainers:
-        - name: ollama-sidecar
+        - name: ollama-init
           image: ollama/ollama:latest
           command: ["bash","-lc"]
           args:
             - |
               ollama serve & sleep 2
               ollama pull llama3.2:1b
-          # volumeMounts:
-          #   - { name: ollama-models, mountPath: /root/.ollama }
+          volumeMounts:
+            - { name: ollama-models, mountPath: /root/.ollama }
 
       containers:
         - name: orchestrator
-          image: docker.io/minuk0815/micro-magentic-one-orchestrator:0.0.5 # Tag version should be correct.
+          image: docker.io/minuk0815/micro-magentic-one-orchestrator:0.0.6 # Tag version should be correct.
           imagePullPolicy: IfNotPresent
           ports: [ { containerPort: 8080 } ]
           envFrom: [ { configMapRef: { name: micro-magentic-one-orch-config } } ]
-          # volumeMounts:
-          #   - { name: shared-data,   mountPath: /data }
+          volumeMounts:
+            - { name: shared-data,   mountPath: /data }
           readinessProbe:
             httpGet: { path: /health, port: 8080 }
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
-            requests: { cpu: "1", memory: "8Gi" }
+            requests: { cpu: "1", memory: "2Gi" }
             limits:
               cpu: "4"
-              memory: "16Gi"
+              memory: "4Gi"
 
         - name: ollama
           image: ollama/ollama:latest
@@ -59,24 +59,24 @@ spec:
           env:
             - { name: OLLAMA_KEEP_ALIVE, value: "5m" }
             - { name: OLLAMA_NUM_PARALLEL, value: "1" }
-          # volumeMounts:
-          #   - { name: ollama-models, mountPath: /root/.ollama }
+          volumeMounts:
+            - { name: ollama-models, mountPath: /root/.ollama }
           readinessProbe:
             tcpSocket: { port: 11434 }
             initialDelaySeconds: 5
             periodSeconds: 10
           resources:
-            requests: { cpu: "1", memory: "8Gi" }
-            limits:
-              nvidia.com/gpu: 1
-              cpu: "4"
-              memory: "16Gi"
+            requests: { cpu: "1", memory: "2Gi" }
+            # limits:
+            #   nvidia.com/gpu: 1
+            #   cpu: "2"
+            #   memory: "4Gi"
 
-      # volumes:
-      #   - name: shared-data
-      #     persistentVolumeClaim: { claimName: micro-magentic-one-pvc }
-      #   - name: ollama-models
-      #     persistentVolumeClaim: { claimName: ollama-models-pvc }
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim: { claimName: micro-magentic-one-pvc }
+        - name: ollama-models
+          persistentVolumeClaim: { claimName: ollama-models-pvc }
 ---
 apiVersion: v1
 kind: Service
