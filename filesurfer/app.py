@@ -14,10 +14,10 @@ app = FastAPI(title="Magentic-One File Surfer")
 
 
 # == env ==
-SAFE_ROOT = os.getenv("SAFE_ROOT", "/data") # To control the file system access for filesurfer agent
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-MODEL = os.getenv("MODEL", "gpt-oss:20b")
-TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "20"))
+FILESURFER_ROOT = os.getenv("FILESURFER_ROOT") # To control the file system access for filesurfer agent
+OLLAMA_HOST = os.getenv("OLLAMA_HOST")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
+TIMEOUT = int(os.getenv("REQUEST_TIMEOUT"))
 
 
 # == Lazy Singleton ==
@@ -27,13 +27,13 @@ def get_agent() -> FileSurfer:
     global _client, _agent
     if _agent is None:
         if _client is None:
-            _client = OllamaChatCompletionClient(model=MODEL, host=OLLAMA_HOST, timeout=TIMEOUT)
-        _agent = FileSurfer(name="filesurfer", model_client=_client, base_path=SAFE_ROOT)
+            _client = OllamaChatCompletionClient(model=OLLAMA_MODEL, host=OLLAMA_HOST, timeout=TIMEOUT)
+        _agent = FileSurfer(name="filesurfer", model_client=_client, base_path=FILESURFER_ROOT)
     return _agent
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "model": MODEL, "ollama_host": OLLAMA_HOST, "safe_root": SAFE_ROOT}
+    return {"status": "ok", "model": OLLAMA_MODEL, "ollama_host": OLLAMA_HOST, "safe_root": FILESURFER_ROOT}
 
 @app.post("/invoke", response_model=InvokeResult)
 async def invoke(body: InvokeBody = Body(...)):

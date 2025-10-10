@@ -12,10 +12,10 @@ from autogen_agentchat.messages import TextMessage
 from autogen_agentchat.base import Response
 
 # --- Env ---
-MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "ollama")  # e.g. openai, ollama
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:20b")
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-REQUEST_TIMEOUT  = float(os.getenv("REQUEST_TIMEOUT", "30"))
+MODEL_PROVIDER = os.getenv("MODEL_PROVIDER")  # e.g. openai, ollama
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST")
+REQUEST_TIMEOUT  = float(os.getenv("REQUEST_TIMEOUT"))
 
 
 # --- Lazy Singleton ---

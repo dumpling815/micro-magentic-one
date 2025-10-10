@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap # 어플리케이션 설정 파일 저장
+metadata:
+  name: micro-magentic-one-config
+  namespace: micro-magentic-one
+data:
+  # === Agent URLs === 
+  ORCHESTRATOR_URL: "http://orchestrator.micro-magentic-one.svc.cluster.local:8080"
+  CODER_URL: "http://coder.micro-magentic-one.svc.cluster.local:8080"                # Cluster IP DNS (고정 IP에 의존 X)
+  FILESURFER_URL: "http://filesurfer.micro-magentic-one.svc.cluster.local:8080"
+  WEBSURFER_URL: "http://websurfer.micro-magentic-one.svc.cluster.local:8080"
+  COMPUTERTERMINAL_URL: "http://user.micro-magentic-one.svc.cluster.local:8080"
+  
+  # === User-side ===
+  REQUEST_TIMEOUT: "120"        # seconds
+  HEALTH_PATH: "/health"
+  AGENT_PORT: "8080"
+  AGENTS: "coder,filesurfer,websurfer,orchestrator,computerterminal"
+  EXECUTER_WORKDIR: "/workspace"
+  WEBSURFER_DOWNLOAD_DIR: "/downloads"
+  FILESURFER_ROOT: "/data"
+  CLEANUP_TEMP_FILES: "false"
+  RETRIES: "3"
+  MAX_STEPS: "8" # for orchestrator
+  APPEND_PREVIOUS: "true"
+
+  # === LLM Settings ===
+  MODEL_PROVIDER: "ollama"
+
+  # === Ollama Settings ===
+  OLLAMA_MODEL: "llama3.2:1b"
+  OLLAMA_HOST: "http://localhost:11434"
+  OLLAMA_KEEP_ALIVE: "5m"
+  OLLAMA_NUM_PARALLEL: "1"
+
+  # === Shared Storage ===
+  SHARED_STORAGE_PATH: "/data"
+
+  # === Authorization ===
+  AUTH_TOKEN: "your_authorization_token"
+
+  

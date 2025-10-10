@@ -15,11 +15,11 @@ from autogen_ext.models.ollama import OllamaChatCompletionClient # If possible, 
 app = FastAPI(title="Magentic-One Web Surfer")
 
 # --- ENV ---
-MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "openai")  # e.g. openai, ollama
+MODEL_PROVIDER = os.getenv("MODEL_PROVIDER")  # e.g. openai, ollama
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:20b") # or "llava:13b"
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "20"))
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL") # or "llava:13b"
+OLLAMA_HOST = os.getenv("OLLAMA_HOST")
+REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT"))
 HEADLESS = os.getenv("HEADLESS", "true").lower() in ("true", "1", "yes") # GUI 사용 안 하는 경우 -> 리소스 절약, GUI 없는 서버환경에서 실행 가능.
 DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR") # Websurfer가 다운로드하는 파일 저장 경로를 지정.
 

@@ -16,10 +16,10 @@ from autogen_ext.code_executors.local import LocalCommandLineCodeExecutor
 app = FastAPI(title="Magentic-One User")
 
 # --- Env ---
-WORKDIR = os.getenv("WORKDIR", "/workspace")
-REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
-CLEANUP_TEMP_FILES = os.getenv("CLEANUP_TEMP_FILES", "false").lower() == "true"
-ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL", "http://orchestrator:8000")
+EXECUTER_WORKDIR = os.getenv("WORKDIR")
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT"))
+CLEANUP_TEMP_FILES = os.getenv("CLEANUP_TEMP_FILES").lower() == "true"
+ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL")
 
 # --- Lazy Singleton ---
 # user 컴퓨터에서는 직접적으로 LLM을 사용하지 않음
@@ -30,7 +30,7 @@ def get_executor() -> LocalCommandLineCodeExecutor:
     if _executor is None:
         _executor = LocalCommandLineCodeExecutor(
             timeout = REQUEST_TIMEOUT,
-            work_dir=WORKDIR,
+            work_dir=EXECUTER_WORKDIR,
             cleanup_temp_files=CLEANUP_TEMP_FILES, # Set to False for debugging purposes
         )
     return _executor

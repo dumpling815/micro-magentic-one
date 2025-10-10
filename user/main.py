@@ -1,21 +1,29 @@
 import os, time, httpx
-from RequestSchema import InvokeBody, InvokeResult, Msg
+from common.request_schema import InvokeBody, InvokeResult, Msg
 from autogen_agentchat.base import TaskResult
 
-REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "120"))
-ENTRYPOINT_URL = os.getenv("ENTRYPOINT", "http://localhost:8000/start")
-RETRIES = int(os.getenv("RETRIES", "1"))             # 실패 시 추가 재시도 횟수
+REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT"))
+RETRIES = int(os.getenv("RETRIES"))             # 실패 시 추가 재시도 횟수
+
 
 def agent_health_check():
     # Check if all agents are healthy
-    agents = ["filesurfer", "websurfer", "coder", "computerterminal", "orchestrator"]  
+    # TODO: health_check는 orchestrator에 둬야하는게 맞지 않나. -> 점검 필요.
+    HEALTH_PATH = os.getenv("HEALTH_PATH")
+    AGENT_PORT = os.getenv("AGENT_PORT")
+    agents = ["filesurfer", "websurfer", "coder", "orchestrator"]
+    agent_urls = [os.getenv(agent.upper() + "_URL") for agent in agents]
     try:
         with httpx.Client(timeout=5.0) as client:
-            for agent in agents:
-                response = client.get(f"http://{agent}:8000/health")
+            for agent_url in agent_urls:
+                response = client.get(agent_url)
                 if response.status_code != 200:
-                    print(f"Agent {agent} health check failed: {response.text}")
+                    print(f"Agent {agent_url} health check failed: {response.text}")
                     return False
+            resonse = client.get("http://localhost:8080/health")
+            if response.status_code != 200:
+                print(f"Computerterminal health check failed: {response.text}")
+            return False
         return True
     except httpx.HTTPError as e:
         print(f"Error during health check: {e}")
@@ -30,7 +38,7 @@ def main():
                 break
             print("One or more agents are not ready. Retrying...")
             setup_trial += 1
-            if setup_trial == 6:
+            if setup_trial == RETRIES:
                 print("Agents are not responding after multiple attempts. Exiting.")
                 return
             time.sleep(5)
@@ -59,7 +67,7 @@ def main():
                 start_time_perf = time.perf_counter()
                 user_msg = Msg(type="TextMessage", source="user", content=user_input)
                 body = InvokeBody(messages=[user_msg])
-                final_response: InvokeResult = client.post(ENTRYPOINT_URL, json=body.model_dump_json()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
+                final_response: InvokeResult = client.post("http://localhost:8080", json=body.model_dump_json()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
             
             except httpx.RequestError as e:
                 print(f"Request failed: {e}")

@@ -16,22 +16,23 @@ app = FastAPI(title="Magentic-One Orchestrator")
 
 
 # --- Env ---
-FILESURFER_URL       = os.getenv("FILESURFER_URL", "http://filesurfer.micro-magentic-one.svc.cluster.local:8000")
-WEBSURFER_URL        = os.getenv("WEBSURFER_URL", "http://websurfer.micro-magentic-one.svc.cluster.local:8000")
-CODER_URL            = os.getenv("CODER_URL", "http://coder.micro-magentic-one.svc.cluster.local:8080")
-COMPUTERTERMINAL_URL = os.getenv("COMPUTERTERMINAL_URL", "http://user.micro-magentic-one.svc.cluster.local:8000")
+FILESURFER_URL       = os.getenv("FILESURFER_URL")
+WEBSURFER_URL        = os.getenv("WEBSURFER_URL")
+CODER_URL            = os.getenv("CODER_URL")
+COMPUTERTERMINAL_URL = os.getenv("COMPUTERTERMINAL_URL")
 
-MODEL_PROVIDER       = os.getenv("MODEL_PROVIDER", "ollama")  # e.g. ollama, openai, etc.
-OLLAMA_MODEL         = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
-OLLAMA_HOST          = os.getenv("OLLAMA_HOST", "http://localhost:11434")  
+MODEL_PROVIDER       = os.getenv("MODEL_PROVIDER")  # e.g. ollama, openai, etc.
+OLLAMA_MODEL         = os.getenv("OLLAMA_MODEL")
+OLLAMA_HOST          = os.getenv("OLLAMA_HOST")  
 
-REQUEST_TIMEOUT      = float(os.getenv("REQUEST_TIMEOUT", "30"))
-RETRIES              = int(os.getenv("RETRIES", "1"))             # 실패 시 추가 재시도 횟수
-MAX_STEPS            = int(os.getenv("MAX_STEPS", "8"))              # 최대 스텝 수    
+REQUEST_TIMEOUT      = int(os.getenv("REQUEST_TIMEOUT"))
+RETRIES              = int(os.getenv("RETRIES"))             # 실패 시 추가 재시도 횟수
+MAX_STEPS            = int(os.getenv("MAX_STEPS"))              # 최대 스텝 수    
 
 AUTH_TOKEN           = os.getenv("AUTH_TOKEN")  # 서비스 공통 토큰이 잇다면 Authorization 헤더로 전파
 
-APPEND_PREVIOUS      = os.getenv("APPEND_PREVIOUS", "true").lower() == "true"  # 이전 스텝 응답 메시지를 다음 입력에 누적
+APPEND_PREVIOUS      = os.getenv("APPEND_PREVIOUS").lower() == "true"  # 이전 스텝 응답 메시지를 다음 입력에 누적
+
 SERVICE_ENDPOINTS: dict[str, str] = {
     "websurfer": WEBSURFER_URL,
     "filesurfer": FILESURFER_URL,
