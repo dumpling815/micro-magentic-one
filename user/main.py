@@ -12,7 +12,7 @@ def agent_health_check():
     HEALTH_PATH = os.getenv("HEALTH_PATH")
     AGENT_PORT = os.getenv("AGENT_PORT")
     agents = ["filesurfer", "websurfer", "coder", "orchestrator"]
-    agent_urls = [os.getenv(agent.upper() + "_URL") for agent in agents]
+    agent_urls = [os.getenv(agent.upper() + "_URL") + HEALTH_PATH for agent in agents]
     try:
         with httpx.Client(timeout=5.0) as client:
             for agent_url in agent_urls:
