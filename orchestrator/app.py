@@ -74,15 +74,19 @@ class HttpChatAgent(AssistantAgent): #
         )
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            invoke_result: InvokeResult = await client.post(self.endpoint + "/invoke", json=payload.model_dump_json())
+            invoke_result: httpx.Response = await client.post(self.endpoint + "/invoke", json=payload.model_dump())
             invoke_result.raise_for_status()
+        
+        # Deserialization
+        invoke_result = invoke_result.json()
+        invoke_result = InvokeResult(**invoke_result)
 
         response = invoke_result.response
+
         if not isinstance(response, Response):
             raise ValueError(f"Agent {self.name} did not return a valid Response object.")
         elif invoke_result.status != "ok":
             raise ValueError(f"Agent {self.name} returned an error status: {invoke_result.status}")
-        response = invoke_result.get("response")
         return response
 
 # --- Lazy Singleton ---

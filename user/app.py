@@ -83,7 +83,7 @@ async def execute(body: InvokeBody = Body(...)):
     # https://microsoft.github.io/autogen/0.2/docs/tutorial/code-executors/ 참조.
     
     try:
-        code_result: Response = await executor.on_messages(py_msgs, CancellationToken())
+        response: Response = await executor.on_messages(py_msgs, CancellationToken())
         # code_result = await executor.execute_code_blocks(code_blocks=code_blocks, cancellation_token=CancellationToken())
         # code_result는 CommandLineCodeResult 클래스 : {exit_code: int, output: str} 형태.
         # code executor의 on_messages() 메서드는 메시지에서 코드 블록을 추출하는 함수 extract_code_blocks_from_messages()와
@@ -91,12 +91,12 @@ async def execute(body: InvokeBody = Body(...)):
     except Exception as e:
         return InvokeResult(
             status="fail", 
-            message=Msg(type="TextMessage", source="computerterminal", content=code_result), 
+            response=response, 
             elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
     return InvokeResult(
         status="ok", 
-        message=Msg(type="TextMessage", source="computerterminal", content=code_result), 
+        response=response,
         elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
     )
     
@@ -111,12 +111,16 @@ async def run(body: InvokeBody = Body(...)):
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
         try:
             #body = InvokeBody([msg], options={})
-            invoke_result: InvokeResult = await client.post(
+            invoke_result: httpx.Response = await client.post(
                 ORCHESTRATOR_URL+"/invoke",
-                json=body.model_dump_json(),
+                json=body.model_dump(),
             )
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail=str(e))
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+        # Deserialization
+        invoke_result = invoke_result.json()
+        invoke_result = InvokeResult(**invoke_result)
+
         return invoke_result

@@ -52,7 +52,6 @@ def main():
             time.sleep(5)
     
     # Start the main loop if all agents are ready
-    ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL")
     with httpx.Client(timeout=REQUEST_TIMEOUT) as client:
         e2e_time_per_request_ms = []
         orchestrate_time_per_request_ms = []
@@ -72,7 +71,7 @@ def main():
                 start_time_perf = time.perf_counter()
                 user_msg = Msg(type="TextMessage", source="user", content=user_input)
                 body = InvokeBody(messages=[user_msg])
-                final_response: InvokeResult = client.post(ORCHESTRATOR_URL + "/invoke", json=body.model_dump()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
+                final_response: httpx.Response = client.post("http://localhost:8080/start", json=body.model_dump()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
             
             except httpx.RequestError as e:
                 print(f"Request failed: {e}")
@@ -81,13 +80,15 @@ def main():
                 break
 
             # Deserialization
-            result = InvokeResult(**final_response) # 응답 형태는 Json, 역직렬화.
-            task_result: TaskResult = result.response if isinstance(result.response, TaskResult) else None 
+            invoke_result = final_response.json()
+            invoke_result = InvokeResult(**invoke_result)
+
+            task_result: TaskResult = invoke_result.response if isinstance(invoke_result.response, TaskResult) else None 
 
             # Latency Measurement
             end_time_perf = time.perf_counter()
             e2e_time_per_request_ms.append(int((end_time_perf - start_time_perf)*1000))
-            orchestrate_time_per_request_ms.append(result.elapsed.get("orchestration_latency_ms", 0))
+            orchestrate_time_per_request_ms.append(invoke_result.elapsed.get("orchestration_latency_ms", 0))
             # Display Result of the Entire System
             print("####################################")
             print(f"Final Message from Micro Magentic-One System:\n->  {task_result.messages[-1].content if task_result and task_result.messages else 'No message returned'}")
