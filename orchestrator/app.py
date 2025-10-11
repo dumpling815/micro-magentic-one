@@ -113,7 +113,7 @@ def get_agent() -> MagenticOneGroupChat:
         _agent = MagenticOneGroupChat(
             name =  "Micro Magentic-One Orchestrator",
             model_client = _client,
-            participant = list(participants.values()), # participant는 Magentic-One을 구성하는 하위 에이전트들의 목록.
+            participants = list(participants.values()), # participant는 Magentic-One을 구성하는 하위 에이전트들의 목록.
         )
     return _agent
 
