@@ -176,7 +176,7 @@ def health():
     return {
         "status": "ok",
         "endpoints": SERVICE_ENDPOINTS,
-        "orchestrator": {"provider": "MODEL_PROVIDER", "model": OLLAMA_MODEL, "host": OLLAMA_HOST},    
+        "orchestrator": {"provider": MODEL_PROVIDER, "model": OLLAMA_MODEL, "host": OLLAMA_HOST},    
     }
 
 @app.get("/ready")

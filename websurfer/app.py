@@ -76,12 +76,12 @@ async def invoke(body: InvokeBody = Body(...)):
     #     else:
     #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {msg.type}")
     
-    agent = get_agent() # FileSurfer agent
+    agent = get_agent() # WebSurfer agent
     if body.method == "on_reset":
         try:
             await agent.on_reset(CancellationToken())
         except Exception as e:
-            print(f"Exception while reset filesurfer: {e}")
+            print(f"Exception while reset websurfer: {e}")
             # on_reset은 return 없음.
         return InvokeResult(
             status="ok", 
