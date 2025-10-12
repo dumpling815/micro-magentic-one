@@ -18,7 +18,7 @@ data:
   COMPUTERTERMINAL_DESCRIPTION: "An agent that can execute codes."
 
   # === User-side ===
-  REQUEST_TIMEOUT: "120"        # seconds
+  REQUEST_TIMEOUT: "300"        # seconds
   HEALTH_PATH: "/health"
   AGENT_PORT: "8080"
   AGENTS: "coder,filesurfer,websurfer,orchestrator,computerterminal"
