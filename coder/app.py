@@ -5,6 +5,7 @@ from common.request_schema import InvokeBody, InvokeResult
 app = FastAPI(title="Magentic-One Coder Agent")
 
 # --- AutoGen imports ---
+from autogen_agentchat.messages import TextMessage
 from autogen_ext.agents.magentic_one import MagenticOneCoderAgent
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
@@ -60,19 +61,36 @@ async def invoke(body: InvokeBody = Body(...)):
     #     py_msgs.append(TextMessage(content=m.content, source=m.source))
     
     coder = get_coder()
-
-    try:
-        response: Response = await getattr(coder,body.method)(body.messages,CancellationToken())
-        #response: Response = await coder.on_messages(py_msgs, CancellationToken())
-    except Exception as e:
-        print(f"Exception occured: {e}")
+    
+    if body.method == "on_reset":
+        try:
+            await coder.on_reset(CancellationToken())
+        except Exception as e:
+            print(f"Exception while reset coder: {e}")
+            # on_reset은 return 없음.
         return InvokeResult(
-            status="fail", 
-            response=None, 
+            status="ok", 
+            response={
+                "chat_message": TextMessage(source="coder", content="reset ok")
+            }, 
+            elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+        )
+    else:
+        try:
+            # 다른 메소드들은 messages 인자 안받는 경우도 있지만, 현재는 무시. TODO: 필요 인자 다른 메소드마다 로직 분기 필요.
+            response: Response = await getattr(coder,body.method)(body.messages,CancellationToken())
+            #response: Response = await coder.on_messages(py_msgs, CancellationToken())
+        except Exception as e:
+            print(f"Exception occured: {e}")
+            return InvokeResult(
+                status="fail", 
+                response={
+                    "chat_message": TextMessage(source="coder", content=f"coder Exception: {e}")
+                }, 
+                elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+            )
+        return InvokeResult(
+            status="ok", 
+            response={"chat_message":response.chat_message,"inner_messages":response.inner_messages}, 
             elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
-    return InvokeResult(
-        status="ok", 
-        response={"chat_message":response.chat_message,"inner_messages":response.inner_messages}, 
-        elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
-    )

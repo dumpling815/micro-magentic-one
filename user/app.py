@@ -9,6 +9,7 @@ from common.request_schema import InvokeBody, InvokeResult
 
 from autogen_agentchat.messages import TextMessage
 from autogen_agentchat.base import Response
+from autogen_agentchat.agents import CodeExecutorAgent
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
 from autogen_ext.code_executors.local import LocalCommandLineCodeExecutor
 # 해당 모듈은 local이긴 하지만, user의 컴퓨터 자체를 컨테이너로 띄우기 때문에 실험 환경 시스템 안정성을 해치지 않음.
@@ -25,15 +26,18 @@ ORCHESTRATOR_URL = os.getenv("ORCHESTRATOR_URL")
 # user 컴퓨터에서는 직접적으로 LLM을 사용하지 않음
 # 오로지 요청을 전달하고, 받은 응답을 ComputerTerminal이 수행하는 것. (ComputerTerminal은 LLM 사용하지 않음)
 _executor = None
-def get_executor() -> LocalCommandLineCodeExecutor:
-    global _executor
-    if _executor is None:
-        _executor = LocalCommandLineCodeExecutor(
-            timeout = REQUEST_TIMEOUT,
-            work_dir=EXECUTER_WORKDIR,
-            cleanup_temp_files=CLEANUP_TEMP_FILES, # Set to False for debugging purposes
-        )
-    return _executor
+_agent = None
+def get_agent() -> CodeExecutorAgent:
+    global _executor, _agent
+    if _agent is None:
+        if _executor is None:
+            _executor = LocalCommandLineCodeExecutor(
+                timeout = REQUEST_TIMEOUT,
+                work_dir=EXECUTER_WORKDIR,
+                cleanup_temp_files=CLEANUP_TEMP_FILES, # Set to False for debugging purposes
+            )
+        _agent = CodeExecutorAgent(name="computerterminal",code_executor=_executor)
+    return _agent
 
 # 파싱 부분을 찾지 못했을 때, 코드 블록 파싱을 직접 구현해봄.
 # CODE_BLOCK_PATTERN = r"```[ \t]*(\w+)?[ \t]*\r?\n(.*?)\r?\n[ \t]*```"
@@ -59,7 +63,7 @@ def health():
 @app.get("/ready")
 def ready():
     try:
-        _ = get_executor()
+        _ = get_agent()
         return {"ready": True}
     except Exception as e:
         raise HTTPException(503, f"not ready: {e}")
@@ -77,30 +81,45 @@ async def execute(body: InvokeBody = Body(...)):
     #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {m.type}")
     #     py_msgs.append(TextMessage(content=m.content, source=m.source))
     
-    executor = get_executor() # LocalCommandLineExecutor agent
+    agent = get_agent() # LocalCommandLineExecutor agent
     # LocalCommandLineExecutor는 Code Block을 포함한 Message를 받아서 해당 코드를 Local 환경에서 실행 후
     # Execution output을 포함한 Message를 반환함.
     # https://microsoft.github.io/autogen/0.2/docs/tutorial/code-executors/ 참조.
-    
-    try:
-        response: Response = await getattr(executor,body.method)(body.messages,CancellationToken())
-        #response: Response = await executor.on_messages(py_msgs, CancellationToken())
-        # code_result = await executor.execute_code_blocks(code_blocks=code_blocks, cancellation_token=CancellationToken())
-        # code_result는 CommandLineCodeResult 클래스 : {exit_code: int, output: str} 형태.
-        # code executor의 on_messages() 메서드는 메시지에서 코드 블록을 추출하는 함수 extract_code_blocks_from_messages()와
-        # execute_code_blocks() 메서드를 내부적으로 호출함.
-    except Exception as e:
-        print(f"Exception occured: {e}")
+    if body.method == "on_reset":
+        try:
+            await agent.on_reset(CancellationToken())
+        except Exception as e:
+            print(f"Exception while reset code executor: {e}")
+            # on_reset은 return 없음.
         return InvokeResult(
-            status="fail", 
-            response=None, 
+            status="ok", 
+            response={
+                "chat_message": TextMessage(source="computerterminal", content="reset ok")
+            }, 
             elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
-    return InvokeResult(
-        status="ok", 
-        response={"chat_message":response.chat_message, "inner_messages":response.inner_messages},
-        elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
-    )
+    else:
+        try:
+            response: Response = await getattr(agent,body.method)(body.messages,CancellationToken())
+            #response: Response = await executor.on_messages(py_msgs, CancellationToken())
+            # code_result = await executor.execute_code_blocks(code_blocks=code_blocks, cancellation_token=CancellationToken())
+            # code_result는 CommandLineCodeResult 클래스 : {exit_code: int, output: str} 형태.
+            # code executor의 on_messages() 메서드는 메시지에서 코드 블록을 추출하는 함수 extract_code_blocks_from_messages()와
+            # execute_code_blocks() 메서드를 내부적으로 호출함.
+        except Exception as e:
+            print(f"Exception occured: {e}")
+            return InvokeResult(
+                status="fail", 
+                response={
+                    "chat_message": TextMessage(source="computerterminal", content=f"ComputerTerminal Exception: {e}")
+                }, 
+                elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+            )
+        return InvokeResult(
+            status="ok", 
+            response={"chat_message":response.chat_message, "inner_messages":response.inner_messages},
+            elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+        )
     
 
 # --- Request to Orchestrator ---

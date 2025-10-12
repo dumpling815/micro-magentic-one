@@ -6,6 +6,8 @@ from fastapi import FastAPI, Body, HTTPException
 import os, time
 from common.request_schema import InvokeBody, InvokeResult
 
+from autogen_agentchat.messages import TextMessage
+
 from autogen_agentchat.base import Response
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
 from autogen_ext.agents.web_surfer import MultimodalWebSurfer
@@ -74,20 +76,36 @@ async def invoke(body: InvokeBody = Body(...)):
     #     else:
     #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {msg.type}")
     
-    agent = get_agent()
-
-    try:
-        response: Response = await getattr(agent,body.method)(body.messages, CancellationToken())
-        #response = await agent.on_messages(py_msgs, CancellationToken())
-    except Exception as e:
-        print(f"Exception occured: {e}")
+    agent = get_agent() # FileSurfer agent
+    if body.method == "on_reset":
+        try:
+            await agent.on_reset(CancellationToken())
+        except Exception as e:
+            print(f"Exception while reset filesurfer: {e}")
+            # on_reset은 return 없음.
         return InvokeResult(
-            status="fail",
-            response=None,
+            status="ok", 
+            response={
+                "chat_message": TextMessage(source="websurfer", content="reset ok")
+            }, 
+            elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
+        )
+    else:
+        try:
+            # 다른 메소드들은 messages 인자 안받는 경우도 있지만, 현재는 무시. TODO: 필요 인자 다른 메소드마다 로직 분기 필요.
+            response: Response = await getattr(agent,body.method)(body.messages, CancellationToken())
+            #response = await agent.on_messages(py_msgs, CancellationToken())
+        except Exception as e:
+            print(f"Exception occured: {e}")
+            return InvokeResult(
+                status="fail",
+                response={
+                    "chat_message": TextMessage(source="websurfer", content=f"WebSurfer Exception: {e}")
+                },
+                elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
+            )
+        return InvokeResult(
+            status="ok",
+            response={"chat_message":response.chat_message,"inner_messages":response.inner_messages},
             elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
         )
-    return InvokeResult(
-        status="ok",
-        response={"chat_message":response.chat_message,"inner_messages":response.inner_messages},
-        elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
-    )
