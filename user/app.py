@@ -150,12 +150,12 @@ async def run(request: dict = Body(...)):
                 response=TaskResult(messages=[],stop_reason=f"HTTPStatusError during orchestrator: {e}"),
                 elapsed={"execution_latency_ms": int((time.perf_counter() - start) * 1000)},
             )
-        except Exception as e:
-            return InvokeResult(
-                status="fail",
-                response=TaskResult(messages=[],stop_reason=f"Exception during orchestrator: {e}"),
-                elapsed={"execution_latency_ms": int((time.perf_counter() - start) * 1000)},
-            )
+        # except Exception as e:
+        #     return InvokeResult(
+        #         status="fail",
+        #         response=TaskResult(messages=[],stop_reason=f"Exception during orchestrator: {e}"),
+        #         elapsed={"execution_latency_ms": int((time.perf_counter() - start) * 1000)},
+        #     )
         # Deserialization
         invoke_result = invoke_result.json()
         invoke_result = InvokeResult(**invoke_result)
