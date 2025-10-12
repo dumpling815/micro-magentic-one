@@ -1,12 +1,11 @@
-from fastapi import FastAPI, Body, HTTPException
+from fastapi import FastAPI, Body
 import time, os
-from common.request_schema import InvokeBody, InvokeResult, Msg
+from common.request_schema import InvokeBody, InvokeResult
 
 # == AutoGen imports ==
 from autogen_ext.agents.file_surfer import FileSurfer
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from autogen_agentchat.base import Response
-from autogen_agentchat.messages import TextMessage
 from autogen_core import CancellationToken # Supports task cancellation while async processing
 
 
@@ -39,21 +38,23 @@ def health_check():
 async def invoke(body: InvokeBody = Body(...)):
     start_time_perf = time.perf_counter()
     # JSON -> AutoGen message objects
-    py_msgs = []
+    # py_msgs = []
 
-    for msg in body.messages:
-        if msg.type == "TextMessage":
-            py_msgs.append(TextMessage(content=msg.content, source=msg.source))
-        else:
-            raise HTTPException(status_code=400, detail=f"Unsupported message type: {msg.type}")
+    # for msg in body.messages:
+    #     if msg.type == "TextMessage":
+    #         py_msgs.append(TextMessage(content=msg.content, source=msg.source))
+    #     else:
+    #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {msg.type}")
     
     agent = get_agent() # FileSurfer agent
     try:
-        response = await agent.on_messages(py_msgs, CancellationToken())
+        response: Response = await getattr(agent,body.method)(body.messages, CancellationToken())
+        #response = await agent.on_messages(py_msgs, CancellationToken())
     except Exception as e:
+        print(f"Exception occured: {e}")
         return InvokeResult(
             status="fail",
-            response = response,
+            response = None,
             elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
         )
     return InvokeResult(

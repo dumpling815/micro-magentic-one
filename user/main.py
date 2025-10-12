@@ -1,5 +1,5 @@
 import os, time, httpx
-from common.request_schema import InvokeBody, InvokeResult, Msg
+from common.request_schema import InvokeResult
 from autogen_agentchat.base import TaskResult
 
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT"))
@@ -69,9 +69,7 @@ def main():
 
                 # Orchestration Request
                 start_time_perf = time.perf_counter()
-                user_msg = Msg(type="TextMessage", source="user", content=user_input)
-                body = InvokeBody(messages=[user_msg])
-                final_response: httpx.Response = client.post("http://localhost:8080/start", json=body.model_dump()) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
+                final_response: httpx.Response = client.post("http://localhost:8080/start", json={"query": user_input}) # Httpx를 통해 요청할 때 Json으로 직렬화 필요.
             
             except httpx.RequestError as e:
                 print(f"Request failed: {e}")
@@ -80,6 +78,7 @@ def main():
                 break
 
             # Deserialization
+            # 이상적으로는 InvokeResult, TaskResult의 처리도 app.py에 두는게 맞지만, 디버깅 편의를 위해 main.py에 위치.
             invoke_result = final_response.json()
             invoke_result = InvokeResult(**invoke_result)
 

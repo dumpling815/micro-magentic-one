@@ -4,8 +4,8 @@
 # 즉, user 디렉토리의 app.py는 최초 유저의 요청을 발생시키는 역할과 동시에, ComputerTerminal agent의 역할도 수행함.
 
 from fastapi import FastAPI, HTTPException, Body
-import time, os, httpx, re
-from common.request_schema import InvokeBody, InvokeResult, Msg
+import time, os, httpx
+from common.request_schema import InvokeBody, InvokeResult
 
 from autogen_agentchat.messages import TextMessage
 from autogen_agentchat.base import Response
@@ -70,12 +70,12 @@ async def execute(body: InvokeBody = Body(...)):
     Handle incoming messages, process them using LocalCommandLineExecutor, and return the response.
     """
     start_time_perf = time.perf_counter()
-    py_msgs =[]
     
-    for m in body.messages:
-        if m.type != "TextMessage":
-            raise HTTPException(status_code=400, detail=f"Unsupported message type: {m.type}")
-        py_msgs.append(TextMessage(content=m.content, source=m.source))
+    #py_msgs =[]
+    # for m in body.messages:
+    #     if m.type != "TextMessage":
+    #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {m.type}")
+    #     py_msgs.append(TextMessage(content=m.content, source=m.source))
     
     executor = get_executor() # LocalCommandLineExecutor agent
     # LocalCommandLineExecutor는 Code Block을 포함한 Message를 받아서 해당 코드를 Local 환경에서 실행 후
@@ -83,15 +83,17 @@ async def execute(body: InvokeBody = Body(...)):
     # https://microsoft.github.io/autogen/0.2/docs/tutorial/code-executors/ 참조.
     
     try:
-        response: Response = await executor.on_messages(py_msgs, CancellationToken())
+        response: Response = await getattr(executor,body.method)(body.messages,CancellationToken())
+        #response: Response = await executor.on_messages(py_msgs, CancellationToken())
         # code_result = await executor.execute_code_blocks(code_blocks=code_blocks, cancellation_token=CancellationToken())
         # code_result는 CommandLineCodeResult 클래스 : {exit_code: int, output: str} 형태.
         # code executor의 on_messages() 메서드는 메시지에서 코드 블록을 추출하는 함수 extract_code_blocks_from_messages()와
         # execute_code_blocks() 메서드를 내부적으로 호출함.
     except Exception as e:
+        print(f"Exception occured: {e}")
         return InvokeResult(
             status="fail", 
-            response=response, 
+            response=None, 
             elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
         )
     return InvokeResult(
@@ -103,12 +105,19 @@ async def execute(body: InvokeBody = Body(...)):
 
 # --- Request to Orchestrator ---
 @app.post("/start", response_model=InvokeResult)
-async def run(body: InvokeBody = Body(...)):
+async def run(request: dict = Body(...)):
     """
     Run the orchestrator(Entire Magentic-One System).
     The orchestrator will handle the rest of the process and return the final result.
     """
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
+        query = request.get("query")
+        if not query:
+            raise HTTPException(400, "Missing 'query' field")
+
+        user_msg = TextMessage(source="user", content=query)
+        body = InvokeBody(method="run", messages=[user_msg])
+
         try:
             #body = InvokeBody([msg], options={})
             invoke_result: httpx.Response = await client.post(

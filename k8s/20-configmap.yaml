@@ -11,6 +11,12 @@ data:
   WEBSURFER_URL: "http://websurfer.micro-magentic-one.svc.cluster.local:8080"
   COMPUTERTERMINAL_URL: "http://user.micro-magentic-one.svc.cluster.local:8080"
   
+  # === Agent Descriptions ===
+  WEBSURFER_DESCRIPTION: "A helpful assistant with access to a web browser. Ask them to perform web searches, open pages, and interact with content (e.g., clicking links, scrolling the viewport, filling in form fields, etc.). It can also summarize the entire page, or answer questions based on the content of the page. It can also be asked to sleep and wait for pages to load, in cases where the page seems not yet fully loaded."
+  FILESURFER_DESCRIPTION: "An agent that can handle local files."
+  CODER_DESCRIPTION: "A helpful and general-purpose AI assistant that has strong language skills, Python skills, and Linux command line skills."
+  COMPUTERTERMINAL_DESCRIPTION: "An agent that can execute codes."
+
   # === User-side ===
   REQUEST_TIMEOUT: "120"        # seconds
   HEALTH_PATH: "/health"

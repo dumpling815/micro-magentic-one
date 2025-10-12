@@ -1,12 +1,12 @@
 from fastapi import FastAPI, Body, HTTPException
-from typing import Sequence
+from typing import Sequence, Any
 import time, os, httpx
-from common.request_schema import InvokeBody, InvokeResult, Msg
+from common.request_schema import InvokeBody, InvokeResult
 
 # --- AutoGen imports ---
-from autogen_agentchat.messages import TextMessage, ChatMessage # ChatMessage는 TextMessage를 포함하는 Uninon. (다양한 메시지 타입 지원을 위해)
+from autogen_agentchat.messages import TextMessage, BaseChatMessage # ChatMessage는 TextMessage를 포함하는 Union. (다양한 메시지 타입 지원을 위해)
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
-from autogen_agentchat.agents import AssistantAgent
+from autogen_agentchat.agents import BaseChatAgent
 from autogen_agentchat.teams import MagenticOneGroupChat 
 from autogen_agentchat.base import Response, TaskResult
 from autogen_ext.models.ollama import OllamaChatCompletionClient
@@ -20,6 +20,11 @@ FILESURFER_URL       = os.getenv("FILESURFER_URL")
 WEBSURFER_URL        = os.getenv("WEBSURFER_URL")
 CODER_URL            = os.getenv("CODER_URL")
 COMPUTERTERMINAL_URL = os.getenv("COMPUTERTERMINAL_URL")
+
+WEBSURFER_DESCRIPTION = os.getenv("WEBSURFER_DESCRIPTION")
+FILESURFER_DESCRIPTION = os.getenv("FILESURFER_DESCRIPTION")
+CODER_DESCRIPTION    = os.getenv("CODER_DESCRIPTION")
+COMPUTERTERMINAL_DESCRIPTION = os.getenv("COMPUTERTERMINAL_DESCRIPTION")
 
 MODEL_PROVIDER       = os.getenv("MODEL_PROVIDER")  # e.g. ollama, openai, etc.
 OLLAMA_MODEL         = os.getenv("OLLAMA_MODEL")
@@ -38,56 +43,102 @@ SERVICE_ENDPOINTS: dict[str, str] = {
     "filesurfer": FILESURFER_URL,
     "coder": CODER_URL,
     "computerterminal": COMPUTERTERMINAL_URL
+}
+AGENT_DESCRIPTIONS: dict[str, str] = {
+    "websurfer": WEBSURFER_DESCRIPTION,
+    "filesurfer": FILESURFER_DESCRIPTION,
+    "coder": CODER_DESCRIPTION,
+    "computerterminal": COMPUTERTERMINAL_DESCRIPTION
 }       
 
 # --- Wrapper for Agent to leverage http ---
-class HttpChatAgent(AssistantAgent): #
+class HttpChatAgent(BaseChatAgent): 
+    # BaseChatAgent를 상속하는 클래스는 아래 메소드를 구현하도록 강요받음 by @abstractmethod
+    # 1. on_messages()
+    # 2. produced_message_types()
+    # 3. on_reset()
+
     """
     AutoGen 참가자처럼 동작하는 경량 래퍼
     - on_messages(messages, Cancellation Token) 인터페이스 제공
     - 내부에서 마이크로서비스의 /invoke HTTP 엔드포인터 호출
     - AssistantAgent에 구현되어있는 여러 메소드들 중 현재는 on_messages만 구현
     """
-    def __init__(self, name: str, endpoint: str, timeout: float = REQUEST_TIMEOUT):
-        self.name = name
-        self.endpoint = endpoint
-        self.timeout = timeout
+    def __init__(self, name: str, endpoint: str, description: str, timeout: float = REQUEST_TIMEOUT):
+        self._name = name
+        self._endpoint = endpoint
+        self._description = description
+        self._timeout = timeout
 
+    async def _rpc(
+            self,
+            body: InvokeBody
+        ) -> InvokeResult:
+        headers = {"Content-Type": "application/json"}
+        async with httpx.AsyncClient(headers=headers, timeout=self._timeout) as client:
+            try:
+                response: httpx.Response = await client.post(f"{self._endpoint}/invoke", json=body.model_dump())
+                response.raise_for_status()
+                return InvokeResult(**response.json())
+            except httpx.HTTPStatusError as e:
+                print(f"[{self._name}] HTTP {e.response.status_code}: {e.response.text}")
+                raise
+            except Exception as e:
+                print(f"[{self._name}] Exception during RPC: {e}")
+                raise 
+    
+    # 직렬화 보조 _rpc는 InvokeBody 형태로 받아야하기 때문.
+    # @staticmethod
+    # def _wire_messages(
+    #     method: str, 
+    #     messages: Sequence[BaseChatMessage],
+    #     options: dict[str,Any]
+    # ) -> InvokeBody:
+    #     return InvokeBody(
+    #         method = method,
+    #         messages = messages
+    #     )
+
+    @property
     def name(self) -> str:
-        return self.name
-    
+        return self._name
+
+    @property    
     def endpoint(self) -> str:
-        return self.endpoint
+        return self._endpoint
     
+    @property
     def description(self) -> str:
-        return f"HTTP-based Assistant Agent for {self.name} at {self.endpoint}"
+        # TODO: description도 http로 받아오는게 맞지 않나? 왜냐하면 description은 orchestrator의 선택 근거 -> Magentic One의 Agent에 대한 description 필요.
+        # 그런데 이런 사소한 부분까지 http로 받아오면 통신 오버헤드가 클 것 같음 => 하드코딩 <현재방식>
+        return self._description
+    
+    # 현재는 BaseChatAgent의 @abstractmethod로 감싸진 필수 메서드만 구현.
+    @property
+    def produced_message_types(self) -> Sequence[type[BaseChatMessage]]:
+        """Get the types of messages this agent can produce.
+
+        Returns:
+            Sequence of message types this agent can generate
+        """
+        types: list[type[BaseChatMessage]] = [TextMessage]
+        return types
     
     async def on_messages(
             self,
-            messages: Sequence[ChatMessage],
+            messages: Sequence[BaseChatMessage],
         ) -> Response:
-        # TODO: 각 Agent들에 구현되어 있는 세부 latency 측정을 저장하는 부분은 구현 예정
-        messages = [Msg(type="TextMessage", source="orchestrator", content= message) for message in messages]
-        payload = InvokeBody(
-            messages = messages,
-            options = {}
-        )
-
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            invoke_result: httpx.Response = await client.post(self.endpoint + "/invoke", json=payload.model_dump())
-            invoke_result.raise_for_status()
-        
-        # Deserialization
-        invoke_result = invoke_result.json()
-        invoke_result = InvokeResult(**invoke_result)
-
-        response = invoke_result.response
-
-        if not isinstance(response, Response):
-            raise ValueError(f"Agent {self.name} did not return a valid Response object.")
-        elif invoke_result.status != "ok":
-            raise ValueError(f"Agent {self.name} returned an error status: {invoke_result.status}")
-        return response
+        body = InvokeBody(method="on_messages",messages=messages)
+        result: InvokeResult = await self._rpc(body)
+        if result.status != "ok":
+            raise RuntimeError(f"{self.name}.on_messages failed: {result}")
+        return result.response
+    
+    async def on_reset(self) -> None:
+        try: 
+            await self._rpc(InvokeBody(method="on_reset"))
+        except Exception as e:
+            print(f"Exception occured while 'on_reset()': {e}")
 
 # --- Lazy Singleton ---
 _client = None
@@ -105,10 +156,10 @@ def get_agent() -> MagenticOneGroupChat:
                 retries=RETRIES
             )
         participants = {
-            "filesurfer": HttpChatAgent("filesurfer", SERVICE_ENDPOINTS["filesurfer"]),
-            #"websurfer": HttpChatAgent("websurfer", SERVICE_ENDPOINTS["websurfer"]), #WebSurfer는 기본적으로 브라우저와의 상호작용 필요하기 때문에 llm 모델이 이를 지원하지 않는 경우 사용 불가.
-            "coder": HttpChatAgent("coder", SERVICE_ENDPOINTS["coder"]),
-            "computerterminal": HttpChatAgent("computerterminal", SERVICE_ENDPOINTS["computerterminal"]),
+            #"filesurfer": HttpChatAgent("filesurfer", SERVICE_ENDPOINTS["filesurfer"]),
+            #"websurfer": HttpChatAgent("websurfer", SERVICE_ENDPOINTS["websurfer"]), 
+            "coder": HttpChatAgent(name="coder",endpoint=SERVICE_ENDPOINTS["coder"],description=AGENT_DESCRIPTIONS["coder"]),
+            "computerterminal": HttpChatAgent(name="computerterminal", endpoint=SERVICE_ENDPOINTS["computerterminal"],description=AGENT_DESCRIPTIONS["computerterminal"]),
         }
         _agent = MagenticOneGroupChat(
             name =  "Micro Magentic-One Orchestrator",
@@ -142,13 +193,33 @@ async def orchestrate(body: InvokeBody = Body(...)):
     start_time_perf = time.perf_counter()
      # 현재는 messages의 첫 번째 메시지만 작업으로 간주. 향후 다중 메시지 지원 가능.
     task:str = body.messages[0].content if body.messages else "No task provided"
-    orchestrator = get_agent()
+    try:
+        orchestrator = get_agent()
+    except Exception as e:
+        finish_time_perf = time.perf_counter()
+        print(f"Exception occured: {e}")
+        return InvokeResult(
+            status="fail",
+            response=None,
+            elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
+        )
     
     # task는 str, TextMessage, ChatMessage 모두 가능.
-    result: TaskResult = await orchestrator.run(task=task, cancellation_token=CancellationToken())
+    try:
+        result: TaskResult = await orchestrator.run(task=task, cancellation_token=CancellationToken())
+    except Exception as e:
+        finish_time_perf = time.perf_counter()
+        print(f"Execption occured while running orchestrator: {e}")
+        return InvokeResult(
+            status="fail",
+            response=None,
+            elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
+        )
+    # yield TaskResult(messages=output_messages, stop_reason=stop_reason) : Groupchat의 결과.
+    print(f"Stop reason: {result.stop_reason}")
     finish_time_perf = time.perf_counter()
     return InvokeResult(
-        status="ok" if result.status == "completed" else "fail",
+        status="ok",
         response=result,
         elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
     )

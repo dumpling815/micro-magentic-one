@@ -1,17 +1,20 @@
 from pydantic import BaseModel, Field
-from typing import Any, Literal
-from autogen_core.code_executor import CodeResult
+from typing import Any, Literal, Sequence
+from autogen_agentchat.messages import BaseChatMessage
 from autogen_agentchat.base import Response, TaskResult
+# Response는 on_messages()의 결과, TaskResult는 run()의 결과
 
-class Msg(BaseModel):
-    type: Literal["TextMessage"] = "TextMessage" # e.g. text, code, file, image, etc. 하지만 현재는 "TextMessage"만 사용 (간편화)
-    source: Literal["user", "orchestrator", "filesurfer", "websurfer", "coder", "computerterminal"] # e.g. filesurfer agent, websurfer agent, orchestrator, etc.
-    content: Any # payload
-    def __str__(self):
-        return f"{self.type} from {self.source}: {self.content}"
+# Msg를 쓸 필요가 있을까? -> 없을 것 같음. => source는 어차피 BaseChatMessage에 있음.
+# class Msg(BaseModel):
+#     # type: Literal["TextMessage"] = "TextMessage" # e.g. text, code, file, image, etc. 하지만 현재는 "TextMessage"만 사용 (간편화)
+#     source: Literal["user", "orchestrator", "filesurfer", "websurfer", "coder", "computerterminal"] # e.g. filesurfer agent, websurfer agent, orchestrator, etc.
+#     content: BaseChatMessage
+#     def __str__(self):
+#         return f"{self.content.id} from {self.source}: {self.content}"
 
 class InvokeBody(BaseModel):
-    messages: list[Msg]
+    method: str | None = None
+    messages: Sequence[BaseChatMessage] | None = None
     options: dict[str, Any] = Field(default_factory=dict)
 
 class InvokeResult(BaseModel):
