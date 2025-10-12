@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Any, Literal, Sequence
-from autogen_agentchat.messages import BaseChatMessage
-from autogen_agentchat.base import Response, TaskResult
+from autogen_agentchat.messages import ChatMessage
+from autogen_agentchat.base import TaskResult
 # Response는 on_messages()의 결과, TaskResult는 run()의 결과
 
 # Msg를 쓸 필요가 있을까? -> 없을 것 같음. => source는 어차피 BaseChatMessage에 있음.
@@ -14,7 +14,7 @@ from autogen_agentchat.base import Response, TaskResult
 
 class InvokeBody(BaseModel):
     method: str | None = None
-    messages: Sequence[BaseChatMessage] | None = None
+    messages: Sequence[ChatMessage] | None = None
     options: dict[str, Any] = Field(default_factory=dict)
 
 class InvokeResult(BaseModel):
