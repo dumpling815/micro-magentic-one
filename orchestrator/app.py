@@ -133,7 +133,10 @@ class HttpChatAgent(BaseChatAgent):
         result: InvokeResult = await self._rpc(body)
         if result.status != "ok":
             raise RuntimeError(f"{self.name}.on_messages failed: {result}")
-        response = Response(chat_message=result.response["chat_message"],inner_messages=result.response["inner_messages"])
+        response = Response(
+            chat_message=result.response["chat_message"],
+            inner_messages=result.response["inner_messages"]
+        )
         return response
 
     async def on_reset(self, cancellation_token: CancellationToken) -> None:
@@ -202,7 +205,7 @@ async def orchestrate(body: InvokeBody = Body(...)):
         print(f"Exception occured: {e}")
         return InvokeResult(
             status="fail",
-            response=None,
+            response=TaskResult(messages=[TextMessage(source="orchestrator",content="Failed to initialize orchestrator")],stop_reason="Failed to initialize orchestrator."),
             elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
         )
     
@@ -214,7 +217,7 @@ async def orchestrate(body: InvokeBody = Body(...)):
         print(f"Execption occured while running orchestrator: {e}")
         return InvokeResult(
             status="fail",
-            response=None,
+            response=TaskResult(messages=[TextMessage(source="orchestrator",content="Exception during running orchestrator")],stop_reason="Exception during running orchestrator."),
             elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
         )
     # yield TaskResult(messages=output_messages, stop_reason=stop_reason) : Groupchat의 결과.

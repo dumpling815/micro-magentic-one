@@ -8,7 +8,7 @@ import time, os, httpx
 from common.request_schema import InvokeBody, InvokeResult
 
 from autogen_agentchat.messages import TextMessage
-from autogen_agentchat.base import Response
+from autogen_agentchat.base import Response, TaskResult
 from autogen_agentchat.agents import CodeExecutorAgent
 from autogen_core import CancellationToken  # Supports task cancellation while async processing
 from autogen_ext.code_executors.local import LocalCommandLineCodeExecutor
@@ -147,13 +147,13 @@ async def run(request: dict = Body(...)):
         except httpx.HTTPStatusError as e:
             return InvokeResult(
                 status="fail",
-                response={"type": "text", "content": f"orchestrator {e.response.status_code}: {e.response.text}"},
+                response=TaskResult(messages=[],stop_reason=f"HTTPStatusError during orchestrator: {e}"),
                 elapsed={"execution_latency_ms": int((time.perf_counter() - start) * 1000)},
             )
         except Exception as e:
             return InvokeResult(
                 status="fail",
-                response={"type": "text", "content": f"/start error: {e}"},
+                response=TaskResult(messages=[],stop_reason=f"Exception during orchestrator: {e}"),
                 elapsed={"execution_latency_ms": int((time.perf_counter() - start) * 1000)},
             )
         # Deserialization
