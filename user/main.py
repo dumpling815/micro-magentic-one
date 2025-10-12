@@ -79,6 +79,8 @@ def main():
 
             # Deserialization
             # 이상적으로는 InvokeResult, TaskResult의 처리도 app.py에 두는게 맞지만, 디버깅 편의를 위해 main.py에 위치.
+            print(f"final_response status: {final_response}")
+            print(f"Content: {final_response.text}")
             invoke_result = final_response.json()
             invoke_result = InvokeResult(**invoke_result)
 
