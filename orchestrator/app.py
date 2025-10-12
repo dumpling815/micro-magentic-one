@@ -127,14 +127,16 @@ class HttpChatAgent(BaseChatAgent):
     async def on_messages(
             self,
             messages: Sequence[BaseChatMessage],
+            cancellation_token: CancellationToken
         ) -> Response:
         body = InvokeBody(method="on_messages",messages=messages)
         result: InvokeResult = await self._rpc(body)
         if result.status != "ok":
             raise RuntimeError(f"{self.name}.on_messages failed: {result}")
-        return result.response
-    
-    async def on_reset(self) -> None:
+        response = Response(chat_message=result.response["chat_message"],inner_messages=result.response["inner_messages"])
+        return response
+
+    async def on_reset(self, cancellation_token: CancellationToken) -> None:
         try: 
             await self._rpc(InvokeBody(method="on_reset"))
         except Exception as e:

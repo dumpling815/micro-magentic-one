@@ -98,7 +98,7 @@ async def execute(body: InvokeBody = Body(...)):
         )
     return InvokeResult(
         status="ok", 
-        response=response,
+        response={"chat_message":response.chat_message, "inner_messages":response.inner_messages},
         elapsed={"execution_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
     )
     
@@ -111,23 +111,32 @@ async def run(request: dict = Body(...)):
     The orchestrator will handle the rest of the process and return the final result.
     """
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
+        start = time.perf_counter()
         query = request.get("query")
         if not query:
             raise HTTPException(400, "Missing 'query' field")
 
         user_msg = TextMessage(source="user", content=query)
         body = InvokeBody(method="run", messages=[user_msg])
-
         try:
             #body = InvokeBody([msg], options={})
             invoke_result: httpx.Response = await client.post(
                 ORCHESTRATOR_URL+"/invoke",
                 json=body.model_dump(),
             )
+            invoke_result.raise_for_status()
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail=str(e))
+            return InvokeResult(
+                status="fail",
+                response={"type": "text", "content": f"orchestrator {e.response.status_code}: {e.response.text}"},
+                elapsed={"execution_latency_ms": int((time.perf_counter() - start) * 1000)},
+            )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            return InvokeResult(
+                status="fail",
+                response={"type": "text", "content": f"/start error: {e}"},
+                elapsed={"execution_latency_ms": int((time.perf_counter() - start) * 1000)},
+            )
         # Deserialization
         invoke_result = invoke_result.json()
         invoke_result = InvokeResult(**invoke_result)

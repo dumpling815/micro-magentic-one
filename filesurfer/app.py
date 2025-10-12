@@ -59,6 +59,6 @@ async def invoke(body: InvokeBody = Body(...)):
         )
     return InvokeResult(
         status="ok",
-        response = response,
+        response = {"chat_message":response.chat_message,"inner_messages":response.inner_messages},
         elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
     )

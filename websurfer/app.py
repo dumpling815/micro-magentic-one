@@ -29,7 +29,7 @@ _agent = None
 def get_agent() -> MultimodalWebSurfer:
     global _client, _agent
     if _agent is None:
-        if _client in None:
+        if _client is None:
             # if MODEL_PROVIDER == "openai":
             #     _client = OpenAIChatCompletionClient(model=OPENAI_MODEL, timeout=REQUEST_TIMEOUT)
             if MODEL_PROVIDER == "ollama":
@@ -88,6 +88,6 @@ async def invoke(body: InvokeBody = Body(...)):
         )
     return InvokeResult(
         status="ok",
-        response=response,
+        response={"chat_message":response.chat_message,"inner_messages":response.inner_messages},
         elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
     )
