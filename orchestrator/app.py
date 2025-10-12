@@ -77,7 +77,7 @@ class HttpChatAgent(BaseChatAgent):
         headers = {"Content-Type": "application/json"}
         async with httpx.AsyncClient(headers=headers, timeout=self._timeout) as client:
             try:
-                response: httpx.Response = await client.post(f"{self._endpoint}/invoke", json=body.model_dump())
+                response: httpx.Response = await client.post(f"{self._endpoint}/invoke", json=body.model_dump(mode="json"))
                 response.raise_for_status()
                 return InvokeResult(**response.json())
             except httpx.HTTPStatusError as e:

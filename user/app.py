@@ -122,7 +122,7 @@ async def run(request: dict = Body(...)):
             #body = InvokeBody([msg], options={})
             invoke_result: httpx.Response = await client.post(
                 ORCHESTRATOR_URL+"/invoke",
-                json=body.model_dump(),
+                json=body.model_dump(mode="json"),
             )
             invoke_result.raise_for_status()
         except httpx.HTTPStatusError as e:
