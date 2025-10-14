@@ -36,7 +36,7 @@ spec:
 
       containers:
         - name: orchestrator
-          image: docker.io/minuk0815/micro-magentic-one-orchestrator:0.0.22   # Tag version should be correct.
+          image: docker.io/minuk0815/micro-magentic-one-orchestrator:0.0.23   # Tag version should be correct.
           imagePullPolicy: IfNotPresent
           ports: [ { containerPort: 8080 } ]
           envFrom: [ { configMapRef: { name: micro-magentic-one-config } } ]
