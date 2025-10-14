@@ -157,7 +157,7 @@ async def run(request: dict = Body(...)):
         #         elapsed={"execution_latency_ms": int((time.perf_counter() - start) * 1000)},
         #     )
         # Deserialization
-        invoke_result = invoke_result.json()
+        invoke_result:dict = invoke_result.json() # 여기 .json()은 pydantic 메서드가 아닌 httpx.Response 메서드임에 유의
         invoke_result = InvokeResult(**invoke_result)
 
         return invoke_result

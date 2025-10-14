@@ -223,10 +223,17 @@ async def orchestrate(body: InvokeBody = Body(...)):
     # yield TaskResult(messages=output_messages, stop_reason=stop_reason) : Groupchat의 결과.
     print(f"Stop reason: {result.stop_reason}")
     print(f"Messages: {result.messages}")
+    for msg in result.messages:
+        print("###################################")
+        print(f"Source: {msg.source}")
+        print(f"Content: {msg.content}")        
     finish_time_perf = time.perf_counter()
     return InvokeResult(
         status="ok",
-        response=result,
+        response={
+            "messages": result.messages,
+            "stop_reason": result.stop_reason
+        },
         elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
     )
     

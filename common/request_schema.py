@@ -20,5 +20,5 @@ class InvokeBody(BaseModel):
 class InvokeResult(BaseModel):
     status: Literal["ok","fail"]
     # autogen_agentchat.base의 Response는 pydantic 모델이 아니라 직렬화 보장하지 못해서 ㅇ로 대체
-    response: dict[str, Any] | TaskResult | None = None
+    response: dict[str, Any] | None = None
     elapsed: dict
