@@ -16,7 +16,7 @@ def agent_health_check():
         with httpx.Client(timeout=5.0) as client:
             for agent_url in agent_urls:
                 response = client.get(agent_url)
-                print(f"Agent {agent_url} response : {response}")
+                print(f"Agent {agent_url}\tresponse : {response}")
                 if response.status_code != 200:
                     print(f"Agent {agent_url} health check failed: {response.text}")
                     return False
@@ -32,6 +32,15 @@ def agent_health_check():
         print(f"Error during health check(computer terminal): {e}")
         return False
     return True
+
+def deserialize_task_result(invoke_result: InvokeResult) -> TaskResult:
+    messages: list[dict] = invoke_result.response.get("messages")
+    stop_reason:str = invoke_result.response.get("stop_reason")
+    msg_list = []
+    for message in messages:
+        cls_name = message.get("type")
+        msg_list.append()
+    # TODO: 구현 필요.
 
 def main():
     setup_trial = 0
@@ -80,30 +89,39 @@ def main():
             # Deserialization
             # 이상적으로는 InvokeResult, TaskResult의 처리도 app.py에 두는게 맞지만, 디버깅 편의를 위해 main.py에 위치.
             print(f"final_response status: {final_response}")
-            print(f"Content: {final_response.text}")
             invoke_result = final_response.json()
-            invoke_result = InvokeResult(**invoke_result)
+            invoke_result = InvokeResult(
+                status=invoke_result.get("status"),
+                response=invoke_result.get("response"),
+                elapsed=invoke_result.get("response")
+            )
 
-            task_result: TaskResult = invoke_result.response if isinstance(invoke_result.response, TaskResult) else None 
-
+            messages: list[dict] = invoke_result.response.get("messages")
+            stop_reason: str = invoke_result.response.get("stop_reason")
             # Latency Measurement
             end_time_perf = time.perf_counter()
             e2e_time_per_request_ms.append(int((end_time_perf - start_time_perf)*1000))
             orchestrate_time_per_request_ms.append(invoke_result.elapsed.get("orchestration_latency_ms", 0))
-            # Display Result of the Entire System
+            # Display
             print("####################################")
-            print(f"Final Message from Micro Magentic-One System:\n->  {task_result.messages[-1].content if task_result and task_result.messages else 'No message returned'}")
+            print(f"Final Message from Micro Magentic-One System:\n-> Source:{messages[-1].source} {messages[-1].content if messages else 'No message returned'}")
             print("####################################")
             print(f"E2E Latency(ms): {e2e_time_per_request_ms[-1]}\nOrchestration Latency(ms): {orchestrate_time_per_request_ms[-1]}")
             print("####################################")
-            print(f"Enter 'y' if you want to see the full conversation history, anything else to continue.",end="")
+            print(f"Enter 'y' if you want to see the full conversation history, anything else to continue.",end=" ")
             if input().lower() == 'y':
-                if task_result and task_result.messages:
-                    print("Full Conversation History:")
-                    for msg in task_result.messages:
-                        print(f"[{msg.source}]: {msg.content}")
-                else:
-                    print("No conversation history available.")
+                print(f"Stop reason: {stop_reason}")
+                if messages:
+                    for message in messages:
+                        print("####################################")
+                        print(f"Type:\t{message.get('type')}")
+                        print(f"ID:\t{message.get('id')}")
+                        print(f"Source:\t{message.get('source')}")
+                        print(f"Content:\t{message.get('content')}")
+            
+            #task_result = deserialize_task_result(invoke_result=invoke_result)
+            #task_result = TaskResult(**(invoke_result.response))
+            #task_result: TaskResult = invoke_result.response if isinstance(invoke_result.response, TaskResult) else None 
 
 if __name__ == "__main__":
     main()
