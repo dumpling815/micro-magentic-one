@@ -127,7 +127,7 @@ class HttpChatAgent(BaseChatAgent):
     async def on_messages(
             self,
             messages: Sequence[BaseChatMessage],
-            cancellation_token: CancellationToken
+            cancellation_token: CancellationToken # Cancellation Token을 HttpChatAgent에서 직접 사용하진 않지만, orchestrator 형식을 맞추기 위해 필요.
         ) -> Response:
         body = InvokeBody(method="on_messages",messages=messages)
         result: InvokeResult = await self._rpc(body)
@@ -161,8 +161,8 @@ def get_agent() -> MagenticOneGroupChat:
                 retries=RETRIES
             )
         participants = {
-            #"filesurfer": HttpChatAgent("filesurfer", SERVICE_ENDPOINTS["filesurfer"]),
-            #"websurfer": HttpChatAgent("websurfer", SERVICE_ENDPOINTS["websurfer"]), 
+            "filesurfer": HttpChatAgent("filesurfer", SERVICE_ENDPOINTS["filesurfer"]),
+            "websurfer": HttpChatAgent("websurfer", SERVICE_ENDPOINTS["websurfer"]), 
             "coder": HttpChatAgent(name="coder",endpoint=SERVICE_ENDPOINTS["coder"],description=AGENT_DESCRIPTIONS["coder"]),
             "computerterminal": HttpChatAgent(name="computerterminal", endpoint=SERVICE_ENDPOINTS["computerterminal"],description=AGENT_DESCRIPTIONS["computerterminal"]),
         }
