@@ -161,8 +161,8 @@ def get_agent() -> MagenticOneGroupChat:
                 retries=RETRIES
             )
         participants = {
-            "filesurfer": HttpChatAgent("filesurfer", SERVICE_ENDPOINTS["filesurfer"]),
-            "websurfer": HttpChatAgent("websurfer", SERVICE_ENDPOINTS["websurfer"]), 
+            "filesurfer": HttpChatAgent("filesurfer", SERVICE_ENDPOINTS["filesurfer"],description=AGENT_DESCRIPTIONS["filesurfer"]),
+            "websurfer": HttpChatAgent("websurfer", SERVICE_ENDPOINTS["websurfer"],description=AGENT_DESCRIPTIONS["websurfer"]), 
             "coder": HttpChatAgent(name="coder",endpoint=SERVICE_ENDPOINTS["coder"],description=AGENT_DESCRIPTIONS["coder"]),
             "computerterminal": HttpChatAgent(name="computerterminal", endpoint=SERVICE_ENDPOINTS["computerterminal"],description=AGENT_DESCRIPTIONS["computerterminal"]),
         }
