@@ -205,7 +205,11 @@ async def orchestrate(body: InvokeBody = Body(...)):
         print(f"Exception occured: {e}")
         return InvokeResult(
             status="fail",
-            response=TaskResult(messages=[TextMessage(source="orchestrator",content="Failed to initialize orchestrator")],stop_reason="Failed to initialize orchestrator."),
+            response={
+                "messages":[TextMessage(source="orchestrator",content="Failed to initialize orchestrator")],
+                "stop_reason":"Failed to initialize orchestrator."
+            },
+            #response=TaskResult(messages=[TextMessage(source="orchestrator",content="Failed to initialize orchestrator")],stop_reason="Failed to initialize orchestrator."),
             elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
         )
     
@@ -217,7 +221,10 @@ async def orchestrate(body: InvokeBody = Body(...)):
         print(f"Execption occured while running orchestrator: {e}")
         return InvokeResult(
             status="fail",
-            response=TaskResult(messages=[TextMessage(source="orchestrator",content="Exception during running orchestrator")],stop_reason="Exception during running orchestrator."),
+            response={
+                "messages": [TextMessage(source="orchestrator",content="Exception during running orchestrator")],
+                "stop_reason": "Exception during running orchestrator."
+            },
             elapsed={"orchestration_latency_ms": int((finish_time_perf-start_time_perf)*1000)}
         )
     # yield TaskResult(messages=output_messages, stop_reason=stop_reason) : Groupchat의 결과.
