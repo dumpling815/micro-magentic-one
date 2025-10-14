@@ -1,5 +1,5 @@
 import os, time, httpx
-from common.request_schema import InvokeResult
+from common.request_schema import InvokeResult, deserialize_messages
 from autogen_agentchat.base import TaskResult
 
 REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT"))
@@ -32,15 +32,7 @@ def agent_health_check():
         print(f"Error during health check(computer terminal): {e}")
         return False
     return True
-
-def deserialize_task_result(invoke_result: InvokeResult) -> TaskResult:
-    messages: list[dict] = invoke_result.response.get("messages")
-    stop_reason:str = invoke_result.response.get("stop_reason")
-    msg_list = []
-    for message in messages:
-        cls_name = message.get("type")
-        msg_list.append()
-    # TODO: 구현 필요.
+        
 
 def main():
     setup_trial = 0

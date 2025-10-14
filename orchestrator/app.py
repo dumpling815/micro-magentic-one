@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Body, HTTPException
 from typing import Sequence, Any
 import time, os, httpx
-from common.request_schema import InvokeBody, InvokeResult
+from common.request_schema import InvokeBody, InvokeResult, deserialize_messages
 
 # --- AutoGen imports ---
 from autogen_agentchat.messages import TextMessage, BaseChatMessage # ChatMessage는 TextMessage를 포함하는 Union. (다양한 메시지 타입 지원을 위해)
@@ -133,9 +133,12 @@ class HttpChatAgent(BaseChatAgent):
         result: InvokeResult = await self._rpc(body)
         if result.status != "ok":
             raise RuntimeError(f"{self.name}.on_messages failed: {result}")
+        # TODO 역직렬화 구현 필요.
+        chat_message = deserialize_messages([result.response["chat_message"]])[0]
+        inner_messages = deserialize_messages(result.response["inner_messages"])
         response = Response(
-            chat_message=result.response["chat_message"],
-            inner_messages=result.response["inner_messages"]
+            chat_message=chat_message, # 이런식이면 orchestrator가 보는 chat_message는 dictionary임.
+            inner_messages=inner_messages
         )
         return response
 
