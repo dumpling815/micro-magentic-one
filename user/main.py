@@ -104,7 +104,7 @@ def main():
             orchestrate_time_per_request_ms.append(invoke_result.elapsed.get("orchestration_latency_ms", 0))
             # Display
             print("####################################")
-            print(f"Final Message from Micro Magentic-One System:\n-> Source:{messages[-1].source} {messages[-1].content if messages else 'No message returned'}")
+            print(f"Final Message from Micro Magentic-One System:\n-> Source:{messages[-1].get('source')} {messages[-1].get('content') if messages else 'No message returned'}")
             print("####################################")
             print(f"E2E Latency(ms): {e2e_time_per_request_ms[-1]}\nOrchestration Latency(ms): {orchestrate_time_per_request_ms[-1]}")
             print("####################################")
