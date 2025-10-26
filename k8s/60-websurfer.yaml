@@ -76,7 +76,7 @@ spec:
           resources:
             requests: { cpu: "1", memory: "2Gi" }
             limits:
-              #nvidia.com/gpu: 1
+              nvidia.com/gpu: 1
               cpu: "2"
               memory: "4Gi"
 
