@@ -75,6 +75,8 @@ async def invoke(body: InvokeBody = Body(...)):
                 },
                 elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
             )
+        print(f"FileSurfer invoke {body.method} completed.")
+        print(f"Response chat_message: {response.chat_message}")
         return InvokeResult(
             status="ok",
             response = {"chat_message":response.chat_message,"inner_messages":response.inner_messages},

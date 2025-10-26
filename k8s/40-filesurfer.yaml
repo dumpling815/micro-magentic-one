@@ -45,7 +45,7 @@ spec:
 
       containers:
         - name: filesurfer
-          image: docker.io/minuk0815/micro-magentic-one-filesurfer:0.0.12 # Tag version should be correct.
+          image: docker.io/minuk0815/micro-magentic-one-filesurfer:0.0.13 # Tag version should be correct.
           imagePullPolicy: IfNotPresent
           ports: [ { containerPort: 8080 } ]
           envFrom:
