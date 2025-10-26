@@ -25,7 +25,7 @@ spec:
       #             - key: accelerator
       #               operator: In
       #               values: ["gpu"]
-
+      runtimeClassName: nvidia # GPU 사용 시 필요
       initContainers:
         - name: ollama-prefetch
           image: ollama/ollama:latest
