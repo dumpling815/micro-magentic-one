@@ -9,7 +9,7 @@ resources:
 configMapGenerator:
   - name: nvidia-device-plugin-config
     files:
-      - config.yaml=../80-gpu-config.yaml
+      - config.yaml=80-gpu-config.yaml
 
 patchesStrategicMerge:
   - nvidia-device-plugin-patch.yaml
