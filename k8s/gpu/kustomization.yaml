@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+
+resources:
+  - https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.5/nvidia-device-plugin.yml
+
+# ← 여기서 기존 80-gpu-config.yaml을 그대로 ConfigMap로 만든다
+configMapGenerator:
+  - name: nvidia-device-plugin-config
+    files:
+      - config.yaml=../80-gpu-config.yaml
+
+patchesStrategicMerge:
+  - nvidia-device-plugin-patch.yaml

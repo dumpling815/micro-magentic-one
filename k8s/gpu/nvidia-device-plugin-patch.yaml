@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin-daemonset
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      runtimeClassName: nvidia
+      containers:
+        - name: nvidia-device-plugin-ctr
+          securityContext:
+            readOnlyRootFilesystem: false   # GBM 심링크 문제 회피
+          args:
+            - --config-file=/config/config.yaml
+          volumeMounts:
+            - name: plugin-config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: plugin-config
+          configMap:
+            name: nvidia-device-plugin-config

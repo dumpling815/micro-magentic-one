@@ -1,0 +1,13 @@
+version: v1
+kind: Config
+metadata:
+  name: time-slicing
+sharing:
+  timeSlicing:
+    resources:
+      - name: nvidia.com/gpu
+        replicas: 4
+
+
+# GPU 개수가 한정되어 GPU time slicing 필요할 때를 위한 config.
+# replicas 개수를 통해 gpu를 사용할 pod 수를 지정.
