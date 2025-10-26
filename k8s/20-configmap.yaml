@@ -33,7 +33,12 @@ data:
   # === LLM Settings ===
   MODEL_PROVIDER: "ollama"
 
+  # === GPU Settings ===
+  NVIDIA_VISIBLE_DEVICES: "all"  # Use all available GPUs
+  NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  
   # === Ollama Settings ===
+  OLLAMA_PREFETCH_MODELS: "llama3.2:1b"
   OLLAMA_MODEL: "llama3.2:1b"
   OLLAMA_HOST: "http://0.0.0.0:11434"
   OLLAMA_KEEP_ALIVE: "5m"

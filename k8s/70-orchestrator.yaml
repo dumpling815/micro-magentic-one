@@ -26,11 +26,18 @@ spec:
       initContainers:
         - name: ollama-prefetch
           image: ollama/ollama:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: micro-magentic-one-config }
           command: ["bash","-lc"]
-          args:
+          args:     # Default 모델은 llama3.2:1b -> ${VARIABLE:-default} 형태로 사용 가능.
             - |
               ollama serve & sleep 2
-              ollama pull llama3.2:1b
+              MODELS="${OLLAMA_PREFETCH_MODELS:-llama3.2:1b}" 
+              for m in $MODELS; do
+                echo "Prefetching model: $m"
+                ollama pull "$m" || { echo "Failed to pull $m"; exit 1; }
+              done
           volumeMounts:
             - { name: ollama-models, mountPath: /root/.ollama }
 
@@ -56,9 +63,8 @@ spec:
           image: ollama/ollama:latest
           imagePullPolicy: IfNotPresent
           ports: [ { containerPort: 11434 } ]
-          env:
-            - { name: OLLAMA_KEEP_ALIVE, value: "5m" }
-            - { name: OLLAMA_NUM_PARALLEL, value: "1" }
+          envFrom:
+            - configMapRef: { name: micro-magentic-one-config }
           volumeMounts:
             - { name: ollama-models, mountPath: /root/.ollama }
           readinessProbe:

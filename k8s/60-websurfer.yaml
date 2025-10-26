@@ -33,7 +33,7 @@ spec:
           envFrom:
             - configMapRef: { name: micro-magentic-one-config }
           command: ["bash","-lc"]
-          args:
+          args:     # Default 모델은 llama3.2:1b -> ${VARIABLE:-default} 형태로 사용 가능.  
             - |
               ollama serve & sleep 2
               MODELS="${OLLAMA_PREFETCH_MODELS:-llama3.2:1b}"
