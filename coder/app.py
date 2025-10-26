@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Body, HTTPException
-import time, os, logging
+import time, os, logging, sys
 from common.request_schema import InvokeBody, InvokeResult
 
 app = FastAPI(title="Magentic-One Coder Agent")
@@ -17,7 +17,14 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 REQUEST_TIMEOUT  = float(os.getenv("REQUEST_TIMEOUT"))
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("coder")
+logger.setLevel(logging.INFO)
+
+_h = logging.StreamHandler(sys.stdout)   # stdout으로 고정
+_h.setLevel(logging.INFO)
+logger.handlers.clear()
+logger.addHandler(_h)
+logger.propagate = False                # uvicorn 로거로 전파 차단
 
 # --- Lazy Singleton ---
 _client = None
@@ -90,8 +97,8 @@ async def invoke(body: InvokeBody = Body(...)):
                 }, 
                 elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
             )
-        logging.info(f"Coder invoke {body.method} completed.")
-        logging.info(f"Response chat_message: {response.chat_message}")
+        logger.info(f"Coder invoke {body.method} completed.")
+        logger.info(f"Response chat_message: {response.chat_message}")
         return InvokeResult(
             status="ok", 
             response={"chat_message":response.chat_message,"inner_messages":response.inner_messages}, 
