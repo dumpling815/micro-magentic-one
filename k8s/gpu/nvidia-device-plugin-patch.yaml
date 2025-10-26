@@ -15,7 +15,7 @@ spec:
             - --config-file=/config/config.yaml
           volumeMounts:
             - name: plugin-config
-              mountPath: /config
+              mountPath: /config/config.yaml
               subPath: config.yaml
               readOnly: true
       volumes:
