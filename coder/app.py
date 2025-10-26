@@ -89,8 +89,8 @@ async def invoke(body: InvokeBody = Body(...)):
                 }, 
                 elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
             )
-        print(f"Coder invoke {body.method} completed.")
-        print(f"Response chat_message: {response.chat_message}")
+        print(f"Coder invoke {body.method} completed.",flush=True)
+        print(f"Response chat_message: {response.chat_message}",flush=True)
         return InvokeResult(
             status="ok", 
             response={"chat_message":response.chat_message,"inner_messages":response.inner_messages}, 
