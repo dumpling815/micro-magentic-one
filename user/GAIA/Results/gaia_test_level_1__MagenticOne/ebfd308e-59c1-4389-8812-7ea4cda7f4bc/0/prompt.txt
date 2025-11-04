@@ -1,0 +1,12 @@
+A paperweight production factory has a series of goals that are A through H as listed below.
+
+Obtain raw materials.
+Find investors.
+Brainstorm new paperweights.
+Optimize production efficiency.
+Open additional plants.
+Upgrade old machinery.
+Do performance reviews.
+Hire more workers.
+
+The goals have a hierarchy of importance. Opening additional plants is more important than obtaining raw materials and brainstorming new paperweights, upgrading old machinery is more important than one other goal only, and the manager thinks that optimizing production efficiency is less important than brainstorming new paperweights but more important than obtaining raw materials but has the order backwards. Hiring new workers is more important than three other goals, doing performance reviews is more important than hiring new workers but less important than optimizing production efficiency, and finding investors is less important than obtaining raw materials. What is the second most important goal (return it exactly as given in the question)?

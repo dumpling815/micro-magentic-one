@@ -1,0 +1,1 @@
+The .csv file I attached has precipitation amounts, in inches, for the five boroughs of New York City in a certain year. Which borough got more precipitation that year?

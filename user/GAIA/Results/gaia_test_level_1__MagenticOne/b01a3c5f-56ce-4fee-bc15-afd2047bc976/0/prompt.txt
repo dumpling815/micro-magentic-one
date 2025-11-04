@@ -1,0 +1,2 @@
+Reverse this ascii picture so that the fish is facing the opposite direction:
+>>$()>. Return the characters (without quotes) in a comma separated list.

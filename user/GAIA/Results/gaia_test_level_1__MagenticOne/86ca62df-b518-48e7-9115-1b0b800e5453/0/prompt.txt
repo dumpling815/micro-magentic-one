@@ -1,0 +1,1 @@
+I attached a CSV file showing precipitation amounts for the five boroughs of New York last year. Can you tell me how much rain Manhattan received in the summer of that year? You can include the precipitation from June, July, and August as counting toward that summer number.

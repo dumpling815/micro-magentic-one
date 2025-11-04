@@ -1,0 +1,1 @@
+Pick a random integer. Now, count the letters that make up that number to give you a new number. Repeat this process until you repeat the same number twice. What is your number? Express it as a numerical character.

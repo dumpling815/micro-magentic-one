@@ -1,0 +1,25 @@
+I have a fun card game that we can play together! Here are the rules: I'll draw a certain number of cards and then arrange them in a certain order in a stack, face down. After I do that, I'll describe a series of steps, and your job will be to keep track of the cards and answer a question about the final ordering.
+
+Okay, from top to bottom, here's the starting layout:
+
+2 of clubs
+3 of hearts
+King of spades
+Queen of hearts
+Jack of clubs
+Ace of diamonds
+
+Now, here are the steps I'm taking to jumble up the stack.
+
+I take the top three cards and place them at the bottom of the stack.
+I take the top card and place it under the second card.
+I take the top two cards and place them under the third card.
+I take the bottom card and place it on top of the stack.
+I take the top two cards and place them under the third card.
+I take the top four cards and place them on the bottom of the stack.
+I take the bottom card and place it on the top of the stack.
+I take the top two cards and place them on the bottom of the stack.
+I take the bottom card and place it on the top of the stack.
+
+
+What is the top card on the stack? If the card's name contains a digit, write the digit in plain text when answering, e.g. 'six of spades' instead of '6 of spades'.

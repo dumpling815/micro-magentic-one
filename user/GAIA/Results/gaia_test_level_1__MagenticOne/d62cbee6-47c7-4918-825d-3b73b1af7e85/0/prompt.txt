@@ -1,0 +1,1 @@
+Please review the provided matrix of images. The final cell is currently not filled. At the bottom of the image are four possible choices, each associated with a letter, A through D. Provide the letter corresponding to the image which correctly completes this matrix.

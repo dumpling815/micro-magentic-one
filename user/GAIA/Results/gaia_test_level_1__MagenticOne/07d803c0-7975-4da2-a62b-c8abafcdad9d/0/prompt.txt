@@ -1,0 +1,1 @@
+According to Papers with Code, what was the name of the first model to go beyond 70% of accuracy on ImageNet ?

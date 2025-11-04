@@ -1,0 +1,1 @@
+You are the manager of a shop that opens at 8 am and closes at 8 pm. The reference file contains a list of workers and their shifts. Each time slot indicates when the worker begins their shift at the shop and ends their shift at the shop. What is the total amount of time when exactly two workers are at your shop? Your answer should be a numerical value and in minutes.

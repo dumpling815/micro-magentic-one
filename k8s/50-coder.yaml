@@ -46,7 +46,7 @@ spec:
 
       containers:
         - name: coder
-          image: docker.io/minuk0815/micro-magentic-one-coder:0.0.14
+          image: docker.io/minuk0815/micro-magentic-one-coder:0.0.15
           imagePullPolicy: IfNotPresent
           ports: [ { containerPort: 8080 } ]
           envFrom:

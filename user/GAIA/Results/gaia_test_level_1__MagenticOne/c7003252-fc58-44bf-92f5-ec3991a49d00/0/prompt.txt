@@ -1,0 +1,1 @@
+The attached spreadsheet lists contact information for employees of the consulting company Great Ape Solutions. How many employees appear to be next-door neighbors of another employee? Assume that houses next to each other have consecutive addresses, and don’t include people who live in the same building as next-door neighbors.

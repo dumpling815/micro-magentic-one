@@ -1,0 +1,3 @@
+Suppose a dog can split into two dogs to make two slightly smaller dogs 75% the weight of the original dog.
+
+I have a 180-pound dog and I define a teacup dog as a dog under 4 pounds. The dog splits itself. Then, the resulting dogs split themselves. The splitting repeats until all the resulting dogs are teacup dogs. How many teacup dogs will there be?

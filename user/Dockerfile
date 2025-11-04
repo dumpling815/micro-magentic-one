@@ -16,6 +16,7 @@ COPY user ./user
 COPY user/requirements.txt ./user/requirements.txt
 
 RUN pip install --no-cache-dir -r user/requirements.txt && \
+    pip install -e ./user/agbench && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 CMD ["python3", "-m", "uvicorn", "user.app:app", "--host", "0.0.0.0", "--port", "8080"]

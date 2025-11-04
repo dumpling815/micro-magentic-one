@@ -1,0 +1,1 @@
+According to Federal Reserve Economic Data (FRED) from the St. Louis Fed, prior to 2021-09, what was the most recent 3-month period where the percent change at an annual rate for the seasonally adjusted Median Consumer Price Index was over 5% for each month? Give your answer in the format YYYY-MM, YYYY-MM, where the starting month of the period comes before the ending month.

@@ -1,0 +1,1 @@
+At the beginning of glycolysis, glucose is converted to glucose-6-phosphate. At the end of glycolysis, what atoms are connected directly to that 6th C atom? Return the elemental symbols in alphabetical order comma separated, don't deduplicate.

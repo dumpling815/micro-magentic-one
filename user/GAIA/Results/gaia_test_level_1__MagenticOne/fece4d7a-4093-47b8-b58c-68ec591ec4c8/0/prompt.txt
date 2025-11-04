@@ -1,0 +1,9 @@
+Verify each of the following ISBN 13 numbers:
+
+1. 9783518188156
+2. 9788476540746
+3. 9788415091004
+4. 9788256014590
+5. 9782046407331
+
+If any are invalid, correct them by changing the final digit. Then, return the list, comma separated, in the same order as in the question.

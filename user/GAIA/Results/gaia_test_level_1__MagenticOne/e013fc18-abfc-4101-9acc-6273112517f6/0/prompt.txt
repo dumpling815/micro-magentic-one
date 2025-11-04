@@ -1,0 +1,1 @@
+Given $f(x) = x^3 - 5x^2 + 2x, x_0 = 1$ what is the smallest $n$ where Newton's Method results in a root approximation that has a 25 digit denominator when the fraction is fully reduced?

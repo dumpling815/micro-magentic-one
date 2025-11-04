@@ -1,0 +1,7 @@
+Sum the coefficients of the cubic term of the indefinite integrals of the following equations:
+
+95x^3-3x^2-19x-1
+13x^2-5^x-38
+-19x^5+x^4+2x^3-3x^2-5^x+10
+x^3+5x^2
+−102x^5-x^4-12x^2-4x

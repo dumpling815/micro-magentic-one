@@ -1,0 +1,2 @@
+[console_scripts]
+agbench = agbench.cli:main

@@ -1,0 +1,1 @@
+According to a paper written by Ari Allyn-Feuer and Ted Sanders that was submitted to arxiv.org on 5 June 2023, what is the exact probability that artificial general intelligence will exist by 2043? Your answer should be rounded up to the nearest integer percentage.

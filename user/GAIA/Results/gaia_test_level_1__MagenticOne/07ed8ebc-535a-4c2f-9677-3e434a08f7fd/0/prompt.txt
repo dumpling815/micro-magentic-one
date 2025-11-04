@@ -1,0 +1,24 @@
+Please solve the following crossword:
+
+|1|2|3|4|5|
+|6| | | | |
+|7| | | | |
+|8| | | | |
+|X|9| | | |
+
+I have indicated by numbers where the hints start, so you should replace numbers and spaces by the answers.
+And X denotes a black square that isn’t to fill.
+
+ACROSS
+- 1 Wooden strips on a bed frame
+- 6 _ Minhaj, Peabody-winning comedian for "Patriot Act"
+- 7 Japanese city of 2.6+ million
+- 8 Stopwatch, e.g.
+- 9 Pain in the neck
+
+DOWN
+- 1 Quick drink of whiskey
+- 2 Eye procedure
+- 3 "Same here," in a three-word phrase
+- 4 Already occupied, as a seat
+- 5 Sarcastically critical commentary. Answer by concatenating the characters you choose to fill the crossword, in row-major order.

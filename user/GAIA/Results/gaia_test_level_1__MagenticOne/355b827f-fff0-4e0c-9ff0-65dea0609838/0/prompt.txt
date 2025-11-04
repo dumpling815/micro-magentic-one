@@ -1,0 +1,1 @@
+The diagram in the attached Excel file represents a game of Tic-Tac-Toe, where X’s are represented by red spaces, and O’s are represented by blue spaces. Where should O place its next letter to win the game? Express your answer as a set of x-y coordinates, formatted as x, y. 0, 0 is the bottom left corner of the Tic-Tac-Toe board.

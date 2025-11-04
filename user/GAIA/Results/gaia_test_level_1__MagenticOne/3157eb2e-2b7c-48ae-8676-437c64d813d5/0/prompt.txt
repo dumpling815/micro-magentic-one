@@ -1,0 +1,1 @@
+If I combine a Beatle's first name and a type of beer, in what category and year of Nobel Prize do I have a winner? Answer using the format CATEGORY, YEAR.

@@ -1,0 +1,1 @@
+In scikit-learn 1.2.2, how many different losses were supported by SGDClassifier?
