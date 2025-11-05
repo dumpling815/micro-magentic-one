@@ -54,8 +54,8 @@ async def invoke(body: InvokeBody = Body(...)):
     #         py_msgs.append(TextMessage(content=msg.content, source=msg.source))
     #     else:
     #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {msg.type}")
-    
-    logger.info(f"FileSurfer invoke called. method: {body.method}, num_messages: {len(body.messages)}")
+    msgs = body.messages or []
+    logger.info(f"FileSurfer invoke called. method: {body.method}, num_messages: {len(msgs)}")
     agent = get_agent() # FileSurfer agent
     logger.info(f"Coder instance: {agent}")
 

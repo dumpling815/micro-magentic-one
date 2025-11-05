@@ -66,7 +66,8 @@ async def invoke(body: InvokeBody = Body(...)):
     #     if m.type != "TextMessage": # 이후에 ChatMessage로 변경하여 더 다양한 메시지 타입 지원.
     #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {m.type}")
     #     py_msgs.append(TextMessage(content=m.content, source=m.source))
-    logger.info(f"Invoke called with method: {body.method}, messages count: {len(body.messages)}")
+    msgs = body.messages or []
+    logger.info(f"Invoke called with method: {body.method}, messages count: {len(msgs)}")
     coder = get_coder()
     logger.info(f"Coder instance: {coder}")
 
