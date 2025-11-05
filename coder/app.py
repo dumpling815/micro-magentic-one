@@ -18,12 +18,28 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 REQUEST_TIMEOUT  = float(os.getenv("REQUEST_TIMEOUT"))
 
 logger = logging.getLogger("coder")
-logging.basicConfig(
-    filename='coder.log', # StreamHandler 대신 FileHandler 사용 기본 모드 'a'
-    encoding='utf-8', 
-    level=logging.INFO, # INFO 레벨부터 출력될 수 있도록 설정.(기본 수준 이상의 로그만 출력)
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    ) 
+
+# Avoid duplicate handlers if module is reloaded
+if not logger.handlers:
+    # File handler
+    file_handler = logging.FileHandler("coder.log", encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+
+    # Console handler (optional but useful in k8s)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+
+    # Common formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+# Make sure uvicorn's root logger doesn't swallow/override these
+logger.propagate = False
+
 
 # --- Lazy Singleton ---
 _client = None
