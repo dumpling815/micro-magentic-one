@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Body
-import time, os
+import time, os, logging
 from common.request_schema import InvokeBody, InvokeResult
 
 # == AutoGen imports ==
@@ -18,6 +18,14 @@ FILESURFER_ROOT = os.getenv("FILESURFER_ROOT") # To control the file system acce
 OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
 TIMEOUT = int(os.getenv("REQUEST_TIMEOUT"))
+
+logger = logging.getLogger("filesurfer")
+logging.basicConfig(
+    filename='filesurfer.log', # StreamHandler 대신 FileHandler 사용 기본 모드 'a'
+    encoding='utf-8', 
+    level=logging.INFO, # INFO 레벨부터 출력될 수 있도록 설정.(기본 수준 이상의 로그만 출력)
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    ) 
 
 
 # == Lazy Singleton ==
@@ -47,13 +55,18 @@ async def invoke(body: InvokeBody = Body(...)):
     #     else:
     #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {msg.type}")
     
+    logger.info(f"FileSurfer invoke called. method: {body.method}, num_messages: {len(body.messages)}")
     agent = get_agent() # FileSurfer agent
+    logger.info(f"Coder instance: {agent}")
+
+    
     if body.method == "on_reset":
         try:
             await agent.on_reset(CancellationToken())
         except Exception as e:
-            print(f"Exception while reset filesurfer: {e}")
+            logger.exception(f"Exception while reset filesurfer: {e}")
             # on_reset은 return 없음.
+        logger.info("FileSurfer reset ok.")
         return InvokeResult(
             status="ok", 
             response={
@@ -67,7 +80,7 @@ async def invoke(body: InvokeBody = Body(...)):
             response: Response = await getattr(agent,body.method)(body.messages, CancellationToken())
             #response = await agent.on_messages(py_msgs, CancellationToken())
         except Exception as e:
-            print(f"Exception occured: {e}")
+            logger.exception(f"Exception occured: {e}")
             return InvokeResult(
                 status="fail",
                 response={
@@ -75,8 +88,8 @@ async def invoke(body: InvokeBody = Body(...)):
                 },
                 elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
             )
-        print(f"FileSurfer invoke {body.method} completed.")
-        print(f"Response chat_message: {response.chat_message}")
+        logger.info(f"FileSurfer invoke {body.method} completed.")
+        logger.info(f"Response chat_message: {response.chat_message}")
         return InvokeResult(
             status="ok",
             response = {"chat_message":response.chat_message,"inner_messages":response.inner_messages},

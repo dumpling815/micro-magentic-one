@@ -3,7 +3,7 @@
 # 빠르게 띄우기 위해서는 OpenAIChatCompletionClient를 사용하고, 이후에 OSS 로컬 멀티모달 대안을 검토해야함.
 
 from fastapi import FastAPI, Body, HTTPException
-import os, time
+import os, time, logging
 from common.request_schema import InvokeBody, InvokeResult
 
 from autogen_agentchat.messages import TextMessage
@@ -24,6 +24,14 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT"))
 HEADLESS = os.getenv("HEADLESS", "true").lower() in ("true", "1", "yes") # GUI 사용 안 하는 경우 -> 리소스 절약, GUI 없는 서버환경에서 실행 가능.
 DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR") # Websurfer가 다운로드하는 파일 저장 경로를 지정.
+
+logger = logging.getLogger("websurfer")
+logging.basicConfig(
+    filename='websurfer.log', # StreamHandler 대신 FileHandler 사용 기본 모드 'a'
+    encoding='utf-8',
+    level=logging.INFO, # INFO 레벨부터 출력될 수 있도록 설정.(기본 수준 이상의 로그만 출력)
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
 
 # --- Lazy Singleton ---
 _client = None
@@ -75,14 +83,17 @@ async def invoke(body: InvokeBody = Body(...)):
     #         py_msgs.append(TextMessage(content=msg.content, source=msg.source))
     #     else:
     #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {msg.type}")
-    
+    logger.info(f"WebSurfer invoke called. method: {body.method}, num_messages: {len(body.messages)}")
     agent = get_agent() # WebSurfer agent
+    logger.info(f"WebSurfer instance: {agent}")
+
     if body.method == "on_reset":
         try:
             await agent.on_reset(CancellationToken())
         except Exception as e:
-            print(f"Exception while reset websurfer: {e}")
+            logger.exception(f"Exception while reset websurfer: {e}")
             # on_reset은 return 없음.
+        logger.info("WebSurfer reset ok.")
         return InvokeResult(
             status="ok", 
             response={
@@ -96,7 +107,7 @@ async def invoke(body: InvokeBody = Body(...)):
             response: Response = await getattr(agent,body.method)(body.messages, CancellationToken())
             #response = await agent.on_messages(py_msgs, CancellationToken())
         except Exception as e:
-            print(f"Exception occured: {e}")
+            logger.exception(f"Exception occured: {e}")
             return InvokeResult(
                 status="fail",
                 response={
@@ -104,8 +115,8 @@ async def invoke(body: InvokeBody = Body(...)):
                 },
                 elapsed={"latency_ms": int((time.perf_counter() - start_time_perf) * 1000)},
             )
-        print(f"WebSurfer invoke {body.method} completed.")
-        print(f"Response chat_message: {response.chat_message}")
+        logger.info(f"WebSurfer invoke {body.method} completed.")
+        logger.info(f"Response chat_message: {response.chat_message}")
         return InvokeResult(
             status="ok",
             response={"chat_message":response.chat_message,"inner_messages":response.inner_messages},

@@ -18,13 +18,12 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 REQUEST_TIMEOUT  = float(os.getenv("REQUEST_TIMEOUT"))
 
 logger = logging.getLogger("coder")
-logger.setLevel(logging.INFO)
-
-_h = logging.StreamHandler(sys.stdout)   # stdout으로 고정
-_h.setLevel(logging.INFO)
-logger.handlers.clear()
-logger.addHandler(_h)
-logger.propagate = False                # uvicorn 로거로 전파 차단
+logging.basicConfig(
+    filename='coder.log', # StreamHandler 대신 FileHandler 사용 기본 모드 'a'
+    encoding='utf-8', 
+    level=logging.INFO, # INFO 레벨부터 출력될 수 있도록 설정.(기본 수준 이상의 로그만 출력)
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    ) 
 
 # --- Lazy Singleton ---
 _client = None
@@ -67,15 +66,17 @@ async def invoke(body: InvokeBody = Body(...)):
     #     if m.type != "TextMessage": # 이후에 ChatMessage로 변경하여 더 다양한 메시지 타입 지원.
     #         raise HTTPException(status_code=400, detail=f"Unsupported message type: {m.type}")
     #     py_msgs.append(TextMessage(content=m.content, source=m.source))
-    
+    logger.info(f"Invoke called with method: {body.method}, messages count: {len(body.messages)}")
     coder = get_coder()
-    
+    logger.info(f"Coder instance: {coder}")
+
     if body.method == "on_reset":
         try:
             await coder.on_reset(CancellationToken())
         except Exception as e:
-            print(f"Exception while reset coder: {e}")
+            logger.exception(f"Exception while reset coder: {e}")
             # on_reset은 return 없음.
+        logger.info("Coder reset ok.")
         return InvokeResult(
             status="ok", 
             response={
@@ -89,7 +90,7 @@ async def invoke(body: InvokeBody = Body(...)):
             response: Response = await getattr(coder,body.method)(body.messages,CancellationToken())
             #response: Response = await coder.on_messages(py_msgs, CancellationToken())
         except Exception as e:
-            print(f"Exception occured: {e}")
+            logger.exception(f"Exception occured: {e}")
             return InvokeResult(
                 status="fail", 
                 response={
