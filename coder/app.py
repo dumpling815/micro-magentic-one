@@ -36,7 +36,7 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 # Make sure uvicorn's root logger doesn't swallow/override these
-logger.propagate = False
+#logger.propagate = False
 
 
 # --- Lazy Singleton ---
