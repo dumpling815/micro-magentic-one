@@ -55,6 +55,9 @@ def get_coder() -> MagenticOneCoderAgent:
         _coder = MagenticOneCoderAgent(name="coder", model_client=_client) # Description과 System message는 해당 클래스에 구현되어 있음.
     return _coder
 
+def write_log(message: str):
+    logger.info(message)
+
 # --- Endpoints ---
 @app.get("/health")
 def health():
@@ -115,8 +118,8 @@ async def invoke(body: InvokeBody = Body(...)):
                 }, 
                 elapsed={"code_generation_latency_ms": int((time.perf_counter() - start_time_perf) * 1000)}
             )
-        logger.info(f"Coder invoke {body.method} completed.")
-        logger.info(f"Response chat_message: {response.chat_message}")
+        write_log(f"Coder invoke {body.method} completed.")
+        write_log(f"Response chat_message: {response.chat_message}")
         return InvokeResult(
             status="ok", 
             response={"chat_message":response.chat_message,"inner_messages":response.inner_messages}, 
