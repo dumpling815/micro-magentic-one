@@ -18,6 +18,7 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST")
 REQUEST_TIMEOUT  = float(os.getenv("REQUEST_TIMEOUT"))
 
 logger = logging.getLogger("coder")
+logger.setLevel(logging.INFO)
 
 # File handler
 file_handler = logging.FileHandler("coder.log", encoding="utf-8")
@@ -36,7 +37,7 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 # Make sure uvicorn's root logger doesn't swallow/override these
-#logger.propagate = False
+logger.propagate = False
 
 
 # --- Lazy Singleton ---

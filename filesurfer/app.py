@@ -57,7 +57,7 @@ async def invoke(body: InvokeBody = Body(...)):
     msgs = body.messages or []
     logger.info(f"FileSurfer invoke called. method: {body.method}, num_messages: {len(msgs)}")
     agent = get_agent() # FileSurfer agent
-    logger.info(f"Coder instance: {agent}")
+    logger.info(f"FileSurfer instance: {agent}")
 
     
     if body.method == "on_reset":
