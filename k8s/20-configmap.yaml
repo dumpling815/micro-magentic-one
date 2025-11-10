@@ -38,8 +38,8 @@ data:
   NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
   
   # === Ollama Settings ===
-  OLLAMA_PREFETCH_MODELS: "llama3.2:1b"
-  OLLAMA_MODEL: "llama3.2:1b"
+  OLLAMA_PREFETCH_MODELS: "llama3.1:8b"
+  OLLAMA_MODEL: "llama3.1:8b"
   OLLAMA_HOST: "http://0.0.0.0:11434"
   OLLAMA_KEEP_ALIVE: "5m"
   OLLAMA_NUM_PARALLEL: "1"
