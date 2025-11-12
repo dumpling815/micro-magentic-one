@@ -33,7 +33,7 @@ spec:
           args:     # Default 모델은 llama3.2:1b -> ${VARIABLE:-default} 형태로 사용 가능.
             - |
               ollama serve & sleep 2
-              MODELS="${OLLAMA_PREFETCH_MODELS:-llama3.2:1b}" 
+              MODELS="${OLLAMA_PREFETCH_MODELS}" 
               for m in $MODELS; do
                 echo "Prefetching model: $m"
                 ollama pull "$m" || { echo "Failed to pull $m"; exit 1; }
