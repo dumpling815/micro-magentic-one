@@ -29,7 +29,7 @@ jsonref==1.1.0
     # via autogen-core
 opentelemetry-api==1.37.0
     # via autogen-core
-pillow==11.3.0
+pillow==12.2.0
     # via autogen-core
 protobuf==5.29.5
     # via autogen-core
@@ -57,10 +57,3 @@ typing-inspection==0.4.2
     # via pydantic
 zipp==3.23.0
     # via importlib-metadata
-
-uvicorn>=0.30
-tiktoken>=0.7.0
-ollama>=0.3.0
-aiohttp>=3.9.0
-aiofiles==23.2.1
-playwright==1.47.0
